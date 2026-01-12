@@ -1,13 +1,12 @@
 package com.nsbm.rocs.pos.dto.sale;
 
+import lombok.Getter;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import com.nsbm.rocs.pos.dto.sale.PaymentResponse;
 
-/**
- * PURPOSE: Complete sale data sent back to frontend
- */
+@Getter
 public class SaleResponse {
 
     private Long saleId;
@@ -135,25 +134,4 @@ public class SaleResponse {
             return response;
         }
     }
-
-    // All getters
-    public Long getSaleId() { return saleId; }
-    public String getInvoiceNo() { return invoiceNo; }
-    public Long getCustomerId() { return customerId; }
-    public String getCustomerName() { return customerName; }
-    public Long getCashierId() { return cashierId; }
-    public String getCashierName() { return cashierName; }
-    public Long getBranchId() { return branchId; }
-    public String getBranchName() { return branchName; }
-    public BigDecimal getGrossTotal() { return grossTotal; }
-    public BigDecimal getDiscount() { return discount; }
-    public BigDecimal getTaxAmount() { return taxAmount; }
-    public BigDecimal getNetTotal() { return netTotal; }
-    public BigDecimal getPaidAmount() { return paidAmount; }
-    public BigDecimal getChangeAmount() { return changeAmount; }
-    public String getPaymentStatus() { return paymentStatus; }
-    public LocalDateTime getSaleDate() { return saleDate; }
-    public String getNotes() { return notes; }
-    public List<SaleItemResponse> getItems() { return items; }
-    public List<PaymentResponse> getPayments() { return payments; }
 }
