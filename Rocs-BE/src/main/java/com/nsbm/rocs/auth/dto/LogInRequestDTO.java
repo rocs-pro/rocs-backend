@@ -9,6 +9,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ErrorDTO {
-    private String message;
+public class LogInRequestDTO {
+    private String username;
+    private String password;
 }
