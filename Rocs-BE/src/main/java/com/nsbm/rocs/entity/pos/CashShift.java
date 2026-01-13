@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class CashShifts {
+public class CashShift {
 
     // Primary Key
     private Long shiftId;

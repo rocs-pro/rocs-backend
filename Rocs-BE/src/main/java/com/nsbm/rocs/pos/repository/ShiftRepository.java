@@ -1,6 +1,6 @@
 package com.nsbm.rocs.pos.repository;
 
-import com.nsbm.rocs.entity.pos.CashShifts;
+import com.nsbm.rocs.entity.pos.CashShift;
 import java.util.Optional;
 import java.util.List;
 
@@ -17,27 +17,27 @@ public interface ShiftRepository {
      * @param shift - CashShift entity to save
      * @return Generated shift_id
      */
-    Long save(CashShifts shift);
+    Long save(CashShift shift);
 
     /**
      * Update existing shift (used when closing)
      * @param shift - CashShift entity with updated values
      */
-    void update(CashShifts shift);
+    void update(CashShift shift);
 
     /**
      * Find shift by ID
      * @param shiftId - Primary key
      * @return Optional<CashShifts> - Present if found, empty if not
      */
-    Optional<CashShifts> findById(Long shiftId);
+    Optional<CashShift> findById(Long shiftId);
 
     /**
      * Find the currently open shift for a cashier
      * @param cashierId - User ID of cashier
      * @return Optional<CashShifts> - Present if found, empty if not
      */
-    Optional<CashShifts> findOpenShiftByCashierId(Long cashierId);
+    Optional<CashShift> findOpenShiftByCashierId(Long cashierId);
 
     /**
      * Check if cashier has an open shift
@@ -52,7 +52,7 @@ public interface ShiftRepository {
      * @param shiftId - Primary key
      * @return Optional<CashShifts> with transaction stats
      */
-    Optional<CashShifts> findByIdWithStats(Long shiftId);
+    Optional<CashShift> findByIdWithStats(Long shiftId);
 
     /**
      * Get all shifts for a specific branch
@@ -61,7 +61,7 @@ public interface ShiftRepository {
      * @param limit - Max number of records
      * @return List of shifts
      */
-    List<CashShifts> findByBranchId(Long branchId, int limit);
+    List<CashShift> findByBranchId(Long branchId, int limit);
 
     /**
      * Get all shifts for a specific cashier
@@ -70,5 +70,5 @@ public interface ShiftRepository {
      * @param limit - Max number of records
      * @return List of shifts
      */
-    List<CashShifts> findByCashierId(Long cashierId, int limit);
+    List<CashShift> findByCashierId(Long cashierId, int limit);
 }
