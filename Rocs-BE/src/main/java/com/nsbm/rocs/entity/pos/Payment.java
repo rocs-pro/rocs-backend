@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Setter
 @Getter
 @NoArgsConstructor
-public class Payments {
+public class Payment {
 
     private Long paymentId;
     private Long saleId;

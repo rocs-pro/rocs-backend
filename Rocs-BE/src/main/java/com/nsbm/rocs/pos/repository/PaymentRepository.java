@@ -1,6 +1,6 @@
 package com.nsbm.rocs.pos.repository;
 
-import com.nsbm.rocs.entity.pos.Payments;
+import com.nsbm.rocs.entity.pos.Payment;
 import java.util.List;
 
 /**
@@ -10,21 +10,21 @@ public interface PaymentRepository {
 
     /**
      * Save a new payment
-     * @param Payments - Payment entity
+     * @param Payment - Payment entity
      * @return Generated payment_id
      */
-    Long save(Payments Payments);
+    Long save(Payment Payment);
 
     /**
      * Save multiple payments (bulk insert)
      * @param payments - List of payments
      */
-    void saveBatch(List<Payments> payments);
+    void saveBatch(List<Payment> payments);
 
     /**
      * Get all payments for a sale
      * @param saleId - Sale ID
      * @return List of payments
      */
-    List<Payments> findBySaleId(Long saleId);
+    List<Payment> findBySaleId(Long saleId);
 }
