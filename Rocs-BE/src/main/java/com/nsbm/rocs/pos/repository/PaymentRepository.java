@@ -1,25 +1,17 @@
 package com.nsbm.rocs.pos.repository;
 
 import com.nsbm.rocs.entity.pos.Payment;
+import org.jspecify.annotations.NonNull;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
 import java.util.List;
 
 /**
  * PURPOSE: Interface for payments operations
  */
-public interface PaymentRepository {
-
-    /**
-     * Save a new payment
-     * @param Payment - Payment entity
-     * @return Generated payment_id
-     */
-    Long save(Payment Payment);
-
-    /**
-     * Save multiple payments (bulk insert)
-     * @param payments - List of payments
-     */
-    void saveBatch(List<Payment> payments);
+@Repository
+public interface PaymentRepository extends JpaRepository<@NonNull Payment, @NonNull Long>, PaymentRepositoryCustom {
 
     /**
      * Get all payments for a sale
@@ -27,4 +19,5 @@ public interface PaymentRepository {
      * @return List of payments
      */
     List<Payment> findBySaleId(Long saleId);
+
 }

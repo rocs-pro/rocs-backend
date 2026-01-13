@@ -1,12 +1,12 @@
 package com.nsbm.rocs.pos.repository.impl;
 
 import com.nsbm.rocs.entity.pos.SaleItem;
-import com.nsbm.rocs.pos.repository.SaleItemRepository;
+import com.nsbm.rocs.pos.dto.sale.SaleItemResponse;
+import com.nsbm.rocs.pos.repository.SaleItemRepositoryCustom;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import java.sql.PreparedStatement;
@@ -14,53 +14,10 @@ import java.sql.SQLException;
 import java.util.List;
 
 @Repository
-public class SaleItemRepositoryImpl implements SaleItemRepository {
+public class SaleItemRepositoryImpl implements SaleItemRepositoryCustom {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
-
-    private final RowMapper<SaleItem> saleItemRowMapper = (rs, _) -> {
-        SaleItem item = new SaleItem();
-
-        item.setSaleItemId(rs.getLong("sale_item_id"));
-        item.setSaleId(rs.getLong("sale_id"));
-        item.setProductId(rs.getLong("product_id"));
-
-        // Handle nullable serial_id
-        long serialId = rs.getLong("serial_id");
-        if (!rs.wasNull()) {
-            item.setSerialId(serialId);
-        }
-
-        item.setQty(rs.getInt("qty"));
-        item.setUnitPrice(rs.getBigDecimal("unit_price"));
-        item.setDiscount(rs.getBigDecimal("discount"));
-        item.setTaxRate(rs.getBigDecimal("tax_rate"));
-        item.setTotal(rs.getBigDecimal("total"));
-
-        return item;
-    };
-
-    @Override
-    public Long save(SaleItem saleItem) {
-        String sql = "INSERT INTO sale_items " +
-                "(sale_id, product_id, serial_id, qty, unit_price, discount, tax_rate, total) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-
-        jdbcTemplate.update(
-                sql,
-                saleItem.getSaleId(),
-                saleItem.getProductId(),
-                saleItem.getSerialId(),
-                saleItem.getQty(),
-                saleItem.getUnitPrice(),
-                saleItem.getDiscount(),
-                saleItem.getTaxRate(),
-                saleItem.getTotal()
-        );
-
-        return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
-    }
 
     @Override
     public void saveBatch(List<SaleItem> saleItems) {
@@ -96,13 +53,7 @@ public class SaleItemRepositoryImpl implements SaleItemRepository {
     }
 
     @Override
-    public List<SaleItem> findBySaleId(Long saleId) {
-        String sql = "SELECT * FROM sale_items WHERE sale_id = ?";
-        return jdbcTemplate.query(sql, saleItemRowMapper, saleId);
-    }
-
-    @Override
-    public List<SaleItem> findBySaleIdWithProductDetails(Long saleId) {
+    public List<SaleItemResponse> findBySaleIdWithProductDetails(Long saleId) {
 
         String sql = "SELECT si.*, p.name as product_name, p.sku, p.barcode, ps.serial_no " +
                 "FROM sale_items si " +
@@ -110,10 +61,27 @@ public class SaleItemRepositoryImpl implements SaleItemRepository {
                 "LEFT JOIN product_serials ps ON si.serial_id = ps.serial_id " +
                 "WHERE si.sale_id = ?";
 
-        // Extended row mapper with product details
-        // Note: SaleItem entity doesn't have product name field
-        // In real implementation, you'd use a DTO for this
-        // For now, we just return the basic item
-        return jdbcTemplate.query(sql, saleItemRowMapper, saleId);
+        return jdbcTemplate.query(sql, (rs, _) -> {
+            SaleItemResponse dto = new SaleItemResponse();
+            dto.setSaleItemId(rs.getLong("sale_item_id"));
+            dto.setProductId(rs.getLong("product_id"));
+            dto.setProductName(rs.getString("product_name"));
+            dto.setSku(rs.getString("sku"));
+            dto.setBarcode(rs.getString("barcode"));
+
+            long serialId = rs.getLong("serial_id");
+            if (!rs.wasNull()) {
+                dto.setSerialId(serialId);
+            }
+            dto.setSerialNo(rs.getString("serial_no"));
+
+            dto.setQuantity(rs.getInt("qty"));
+            dto.setUnitPrice(rs.getBigDecimal("unit_price"));
+            dto.setDiscount(rs.getBigDecimal("discount"));
+            dto.setTaxRate(rs.getBigDecimal("tax_rate"));
+            dto.setTotal(rs.getBigDecimal("total"));
+
+            return dto;
+        }, saleId);
     }
 }
