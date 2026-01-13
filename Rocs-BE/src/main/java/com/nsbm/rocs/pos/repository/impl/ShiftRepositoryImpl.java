@@ -17,7 +17,7 @@ public class ShiftRepositoryImpl implements ShiftRepository {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    private final RowMapper<CashShift> shiftRowMapper = (rs, _) -> {
+    private final RowMapper<CashShift> shiftRowMapper = (rs, rowNum) -> {
         CashShift shift = new CashShift();
 
         shift.setShiftId(rs.getLong("shift_id"));
