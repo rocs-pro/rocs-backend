@@ -7,13 +7,9 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
-
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
-
 
 @Repository
 public class ShiftRepositoryImpl implements ShiftRepository {
@@ -21,40 +17,37 @@ public class ShiftRepositoryImpl implements ShiftRepository {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    private final RowMapper<CashShift> shiftRowMapper = new RowMapper<CashShift>() {
-        @Override
-        public CashShift mapRow(ResultSet rs, int rowNum) throws SQLException {
-            CashShift shift = new CashShift();
+    private final RowMapper<CashShift> shiftRowMapper = (rs, _) -> {
+        CashShift shift = new CashShift();
 
-            shift.setShiftId(rs.getLong("shift_id"));
-            shift.setBranchId(rs.getLong("branch_id"));
-            shift.setCashierId(rs.getLong("cashier_id"));
+        shift.setShiftId(rs.getLong("shift_id"));
+        shift.setBranchId(rs.getLong("branch_id"));
+        shift.setCashierId(rs.getLong("cashier_id"));
 
-            // Handle timestamps (can be null for closedAt)
-            Timestamp openedTimestamp = rs.getTimestamp("opened_at");
-            if (openedTimestamp != null) {
-                shift.setOpenedAt(openedTimestamp.toLocalDateTime());
-            }
-
-            Timestamp closedTimestamp = rs.getTimestamp("closed_at");
-            if (closedTimestamp != null) {
-                shift.setClosedAt(closedTimestamp.toLocalDateTime());
-            }
-
-            // Map money fields
-            shift.setOpeningCash(rs.getBigDecimal("opening_cash"));
-            shift.setClosingCash(rs.getBigDecimal("closing_cash"));
-            shift.setExpectedCash(rs.getBigDecimal("expected_cash"));
-            shift.setCashDifference(rs.getBigDecimal("cash_difference"));
-            shift.setTotalSales(rs.getBigDecimal("total_sales"));
-            shift.setTotalReturns(rs.getBigDecimal("total_returns"));
-
-            // Map strings
-            shift.setStatus(rs.getString("status"));
-            shift.setNotes(rs.getString("notes"));
-
-            return shift;
+        // Handle timestamps (can be null for closedAt)
+        Timestamp openedTimestamp = rs.getTimestamp("opened_at");
+        if (openedTimestamp != null) {
+            shift.setOpenedAt(openedTimestamp.toLocalDateTime());
         }
+
+        Timestamp closedTimestamp = rs.getTimestamp("closed_at");
+        if (closedTimestamp != null) {
+            shift.setClosedAt(closedTimestamp.toLocalDateTime());
+        }
+
+        // Map money fields
+        shift.setOpeningCash(rs.getBigDecimal("opening_cash"));
+        shift.setClosingCash(rs.getBigDecimal("closing_cash"));
+        shift.setExpectedCash(rs.getBigDecimal("expected_cash"));
+        shift.setCashDifference(rs.getBigDecimal("cash_difference"));
+        shift.setTotalSales(rs.getBigDecimal("total_sales"));
+        shift.setTotalReturns(rs.getBigDecimal("total_returns"));
+
+        // Map strings
+        shift.setStatus(rs.getString("status"));
+        shift.setNotes(rs.getString("notes"));
+
+        return shift;
     };
 
     @Override

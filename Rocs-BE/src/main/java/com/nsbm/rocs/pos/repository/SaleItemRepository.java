@@ -1,6 +1,6 @@
 package com.nsbm.rocs.pos.repository;
 
-import com.nsbm.rocs.entity.pos.SaleItems;
+import com.nsbm.rocs.entity.pos.SaleItem;
 import java.util.List;
 
 /**
@@ -13,25 +13,25 @@ public interface SaleItemRepository {
      * @param saleItem - SaleItem entity
      * @return Generated sale_item_id
      */
-    Long save(SaleItems saleItem);
+    Long save(SaleItem saleItem);
 
     /**
      * Save multiple sale items (bulk insert for performance)
-     * @param SaleItemss - List of sale items
+     * @param saleItemsses - List of sale items
      */
-    void saveBatch(List<SaleItems> SaleItemss);
+    void saveBatch(List<SaleItem> saleItemsses);
 
     /**
      * Get all items for a sale
      * @param saleId - Sale ID
      * @return List of sale items
      */
-    List<SaleItems> findBySaleId(Long saleId);
+    List<SaleItem> findBySaleId(Long saleId);
 
     /**
      * Get all items for a sale with product details (JOIN query)
      * @param saleId - Sale ID
      * @return List of sale items with product names, SKU, etc.
      */
-    List<SaleItems> findBySaleIdWithProductDetails(Long saleId);
+    List<SaleItem> findBySaleIdWithProductDetails(Long saleId);
 }

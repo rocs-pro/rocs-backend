@@ -1,6 +1,6 @@
 package com.nsbm.rocs.pos.repository;
 
-import com.nsbm.rocs.entity.pos.Sales;
+import com.nsbm.rocs.entity.pos.Sale;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -12,31 +12,31 @@ public interface SaleRepository {
 
     /**
      * Save a new Sales
-     * @param Sales - Sales entity
+     * @param Sale - Sales entity
      * @return Generated Sales_id
      */
-    Long save(Sales Sales);
+    Long save(Sale Sale);
 
     /**
      * Find Sales by ID
      * @param SalesId - Primary key
      * @return Optional<Sales>
      */
-    Optional<Sales> findById(Long SalesId);
+    Optional<Sale> findById(Long SalesId);
 
     /**
      * Find Sales by invoice number
      * @param invoiceNo - Invoice number
      * @return Optional<Sales>
      */
-    Optional<Sales> findByInvoiceNo(String invoiceNo);
+    Optional<Sale> findByInvoiceNo(String invoiceNo);
 
     /**
      * Get all Saless for a shift
      * @param shiftId - Shift ID
      * @return List of Saless
      */
-    List<Sales> findByShiftId(Long shiftId);
+    List<Sale> findByShiftId(Long shiftId);
 
     /**
      * Get Saless by date range
@@ -45,7 +45,7 @@ public interface SaleRepository {
      * @param endDate - End date
      * @return List of Saless
      */
-    List<Sales> findByDateRange(Long branchId, LocalDateTime startDate, LocalDateTime endDate);
+    List<Sale> findByDateRange(Long branchId, LocalDateTime startDate, LocalDateTime endDate);
 
     /**
      * Get total Saless count for a shift

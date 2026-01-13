@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Setter
 @Getter
 @NoArgsConstructor
-public class Sales {
+public class Sale {
 
     private Long saleId;
     private String invoiceNo;

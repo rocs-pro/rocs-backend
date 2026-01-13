@@ -7,7 +7,6 @@ import java.util.List;
 /**
  * PURPOSE: Interface for all shift-related database operations
  * WHY INTERFACE? Follows Dependency Inversion Principle (SOLID)
- *
  * Contract: "Any class implementing this MUST provide these methods"
  */
 public interface ShiftRepository {
