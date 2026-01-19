@@ -1,6 +1,6 @@
 package com.nsbm.rocs.inventory.repository;
 
-import com.nsbm.rocs.inventory.entity.Product;
+import com.nsbm.rocs.entity.inventory.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

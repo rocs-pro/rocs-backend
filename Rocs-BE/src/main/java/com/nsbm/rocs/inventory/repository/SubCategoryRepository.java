@@ -1,6 +1,6 @@
 package com.nsbm.rocs.inventory.repository;
 
-import com.nsbm.rocs.inventory.entity.SubCategory;
+import com.nsbm.rocs.entity.inventory.SubCategory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
