@@ -15,8 +15,11 @@ public class CashShift {
     // Primary Key
     private Long shiftId;
 
+    private String shiftNo;
+
     // Foreign Keys
     private Long branchId;
+    private Long terminalId;
     private Long cashierId;
 
     // Timestamps
@@ -31,6 +34,9 @@ public class CashShift {
     private BigDecimal totalSales;
     private BigDecimal totalReturns;
 
+    private Long approvedBy;
+    private LocalDateTime approvedAt;
+
     // Status and notes
     private String status; // OPEN, CLOSED
     private String notes;
@@ -39,7 +45,9 @@ public class CashShift {
     public String toString() {
         return "CashShift{" +
                 "shiftId=" + shiftId +
+                ", shiftNo='" + shiftNo + '\'' +
                 ", branchId=" + branchId +
+                ", terminalId=" + terminalId +
                 ", cashierId=" + cashierId +
                 ", openedAt=" + openedAt +
                 ", closedAt=" + closedAt +
@@ -48,4 +56,6 @@ public class CashShift {
                 ", status='" + status + '\'' +
                 '}';
     }
+
+
 }

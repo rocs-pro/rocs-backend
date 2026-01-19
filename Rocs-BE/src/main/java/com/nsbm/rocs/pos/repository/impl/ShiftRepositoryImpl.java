@@ -21,13 +21,22 @@ public class ShiftRepositoryImpl implements ShiftRepository {
         CashShift shift = new CashShift();
 
         shift.setShiftId(rs.getLong("shift_id"));
+        shift.setShiftNo(rs.getString("shift_no")); // Map generated shift_no
         shift.setBranchId(rs.getLong("branch_id"));
         shift.setCashierId(rs.getLong("cashier_id"));
+        shift.setTerminalId(rs.getLong("terminal_id"));
 
         // Handle timestamps (can be null for closedAt)
         Timestamp openedTimestamp = rs.getTimestamp("opened_at");
         if (openedTimestamp != null) {
             shift.setOpenedAt(openedTimestamp.toLocalDateTime());
+        }
+
+        // Map approval info
+        shift.setApprovedBy(rs.getLong("approved_by"));
+        Timestamp approvedTimestamp = rs.getTimestamp("approved_at");
+        if (approvedTimestamp != null) {
+            shift.setApprovedAt(approvedTimestamp.toLocalDateTime());
         }
 
         Timestamp closedTimestamp = rs.getTimestamp("closed_at");
@@ -52,17 +61,23 @@ public class ShiftRepositoryImpl implements ShiftRepository {
 
     @Override
     public Long save(CashShift shift) {
+        // Updated SQL to include shift_no, approved_by, approved_at
         String sql = "INSERT INTO cash_shifts " +
-                "(branch_id, cashier_id, opened_at, opening_cash, status) " +
-                "VALUES (?, ?, NOW(), ?, ?)";
+                "(shift_no, branch_id, cashier_id, terminal_id, opened_at, opening_cash, status, approved_by, approved_at, notes) " +
+                "VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)";
 
         // Execute INSERT query
         jdbcTemplate.update(
                 sql,
+                shift.getShiftNo(),
                 shift.getBranchId(),
                 shift.getCashierId(),
+                shift.getTerminalId(),
                 shift.getOpeningCash(),
-                shift.getStatus()
+                shift.getStatus(),
+                shift.getApprovedBy(),
+                shift.getApprovedAt(),
+                shift.getNotes()
         );
 
         // Get the generated ID
