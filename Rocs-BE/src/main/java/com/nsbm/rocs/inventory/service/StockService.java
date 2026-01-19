@@ -4,15 +4,14 @@ import com.nsbm.rocs.inventory.dto.StockAdjustmentDTO;
 import com.nsbm.rocs.inventory.dto.StockDTO;
 import com.nsbm.rocs.inventory.dto.StockReportDTO;
 import com.nsbm.rocs.inventory.dto.LowStockAlertDTO;
-import com.nsbm.rocs.inventory.entity.Product;
-import com.nsbm.rocs.inventory.entity.Stock;
+import com.nsbm.rocs.entity.inventory.Product;
+import com.nsbm.rocs.entity.inventory.Stock;
 import com.nsbm.rocs.inventory.exception.InsufficientStockException;
 import com.nsbm.rocs.inventory.exception.ResourceNotFoundException;
 import com.nsbm.rocs.inventory.repository.ProductRepository;
 import com.nsbm.rocs.inventory.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;

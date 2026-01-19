@@ -1,7 +1,7 @@
 package com.nsbm.rocs.inventory.service;
 
 import com.nsbm.rocs.inventory.dto.ProductDTO;
-import com.nsbm.rocs.inventory.entity.Product;
+import com.nsbm.rocs.entity.inventory.Product;
 import com.nsbm.rocs.inventory.exception.DuplicateResourceException;
 import com.nsbm.rocs.inventory.exception.ResourceNotFoundException;
 import com.nsbm.rocs.inventory.repository.*;
@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service

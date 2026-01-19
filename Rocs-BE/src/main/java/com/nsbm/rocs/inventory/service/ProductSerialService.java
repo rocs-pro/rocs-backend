@@ -2,9 +2,8 @@ package com.nsbm.rocs.inventory.service;
 
 import com.nsbm.rocs.inventory.dto.DamagedProductDTO;
 import com.nsbm.rocs.inventory.dto.ProductSerialDTO;
-import com.nsbm.rocs.inventory.entity.Batch;
-import com.nsbm.rocs.inventory.entity.Product;
-import com.nsbm.rocs.inventory.entity.ProductSerial;
+import com.nsbm.rocs.entity.inventory.Product;
+import com.nsbm.rocs.entity.inventory.ProductSerial;
 import com.nsbm.rocs.inventory.exception.DuplicateResourceException;
 import com.nsbm.rocs.inventory.exception.InsufficientStockException;
 import com.nsbm.rocs.inventory.exception.ResourceNotFoundException;

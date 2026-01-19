@@ -1,7 +1,7 @@
 package com.nsbm.rocs.inventory.service;
 
 import com.nsbm.rocs.inventory.dto.BrandDTO;
-import com.nsbm.rocs.inventory.entity.Brand;
+import com.nsbm.rocs.entity.inventory.Brand;
 import com.nsbm.rocs.inventory.exception.ResourceNotFoundException;
 import com.nsbm.rocs.inventory.repository.BrandRepository;
 import lombok.RequiredArgsConstructor;

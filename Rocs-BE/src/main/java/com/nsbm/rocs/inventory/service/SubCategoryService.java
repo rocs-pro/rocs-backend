@@ -1,8 +1,7 @@
 package com.nsbm.rocs.inventory.service;
 
 import com.nsbm.rocs.inventory.dto.SubCategoryDTO;
-import com.nsbm.rocs.inventory.entity.Category;
-import com.nsbm.rocs.inventory.entity.SubCategory;
+import com.nsbm.rocs.entity.inventory.SubCategory;
 import com.nsbm.rocs.inventory.exception.ResourceNotFoundException;
 import com.nsbm.rocs.inventory.repository.CategoryRepository;
 import com.nsbm.rocs.inventory.repository.SubCategoryRepository;

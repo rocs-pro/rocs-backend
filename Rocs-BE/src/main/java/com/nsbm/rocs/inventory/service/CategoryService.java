@@ -1,7 +1,7 @@
 package com.nsbm.rocs.inventory.service;
 
 import com.nsbm.rocs.inventory.dto.CategoryDTO;
-import com.nsbm.rocs.inventory.entity.Category;
+import com.nsbm.rocs.entity.inventory.Category;
 import com.nsbm.rocs.inventory.exception.ResourceNotFoundException;
 import com.nsbm.rocs.inventory.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;

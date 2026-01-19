@@ -2,8 +2,8 @@ package com.nsbm.rocs.inventory.service;
 
 import com.nsbm.rocs.inventory.dto.BatchDTO;
 import com.nsbm.rocs.inventory.dto.ExpiryAlertDTO;
-import com.nsbm.rocs.inventory.entity.Batch;
-import com.nsbm.rocs.inventory.entity.Product;
+import com.nsbm.rocs.entity.inventory.Batch;
+import com.nsbm.rocs.entity.inventory.Product;
 import com.nsbm.rocs.inventory.exception.InsufficientStockException;
 import com.nsbm.rocs.inventory.exception.ResourceNotFoundException;
 import com.nsbm.rocs.inventory.repository.BatchRepository;
