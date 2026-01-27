@@ -65,13 +65,10 @@ public class PosProductController {
 
         // 3. Try by SKU
         var productBySku = productRepository.findBySku(query);
-        if (productBySku.isPresent()) {
-             return ResponseEntity.ok(ApiResponse.success("Product found", mapToDTO(productBySku.get())));
-        }
-
-        return new ResponseEntity<>(
+        return productBySku.map(product -> ResponseEntity.ok(ApiResponse.success("Product found", mapToDTO(product)))).orElseGet(() -> new ResponseEntity<>(
                 ApiResponse.error("Product not found"),
-                HttpStatus.NOT_FOUND);
+                HttpStatus.NOT_FOUND));
+
     }
 
     @GetMapping("/quick")

@@ -3,8 +3,8 @@ package com.nsbm.rocs.pos.repository.impl;
 import com.nsbm.rocs.entity.pos.SaleItem;
 import com.nsbm.rocs.pos.dto.sale.SaleItemResponse;
 import com.nsbm.rocs.pos.repository.SaleItemRepositoryCustom;
+import lombok.AllArgsConstructor;
 import org.jspecify.annotations.NonNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -14,10 +14,10 @@ import java.sql.SQLException;
 import java.util.List;
 
 @Repository
+@AllArgsConstructor
 public class SaleItemRepositoryImpl implements SaleItemRepositoryCustom {
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public void saveBatch(List<SaleItem> saleItems) {

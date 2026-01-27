@@ -2,7 +2,7 @@ package com.nsbm.rocs.pos.repository.impl;
 
 import com.nsbm.rocs.entity.pos.Sale;
 import com.nsbm.rocs.pos.repository.SaleRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -14,10 +14,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@AllArgsConstructor
 public class SaleRepositoryImpl implements SaleRepository {
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+
+    private final JdbcTemplate jdbcTemplate;
 
     private final RowMapper<Sale> saleRowMapper = (rs, _) -> {
         Sale sale = new Sale();
