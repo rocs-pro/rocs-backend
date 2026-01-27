@@ -21,13 +21,13 @@ public class CreateSaleRequest {
     @Valid
     private List<SaleItemRequest> items;
 
-    @NotEmpty(message = "Payments are required")
     @Valid
     private List<PaymentRequest> payments;
 
     private BigDecimal discount;
 
     private String notes;
+    private String status; // NEW FIELD for Hold/Pending
 
     @Override
     public String toString() {
@@ -36,6 +36,7 @@ public class CreateSaleRequest {
                 ", items=" + items +
                 ", payments=" + payments +
                 ", discount=" + discount +
+                ", status='" + status + '\'' + // Add to toString
                 ", notes='" + notes + '\'' +
                 '}';
     }

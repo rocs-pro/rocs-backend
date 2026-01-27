@@ -28,16 +28,19 @@ public class SaleItem {
     @Column(name = "serial_id")
     private Long serialId; // For IMEI items
 
-    private Integer qty;
+    @Column(precision = 12, scale = 3)
+    private BigDecimal qty;
 
-    @Column(name = "unit_price")
+    @Column(name = "unit_price", precision = 10, scale = 2)
     private BigDecimal unitPrice;
 
+    @Column(precision = 10, scale = 2)
     private BigDecimal discount;
 
-    @Column(name = "tax_rate")
+    @Column(name = "tax_rate", precision = 5, scale = 2)
     private BigDecimal taxRate;
 
+    @Column(precision = 10, scale = 2)
     private BigDecimal total;
 
 

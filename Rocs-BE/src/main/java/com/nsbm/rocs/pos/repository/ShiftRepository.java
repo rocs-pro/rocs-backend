@@ -70,4 +70,11 @@ public interface ShiftRepository {
      * @return List of shifts
      */
     List<CashShift> findByCashierId(Long cashierId, int limit);
+
+    /**
+     * Find active shift for a cashier
+     * @param cashierId - User ID
+     * @return Optional<CashShift>
+     */
+    Optional<CashShift> findActiveShiftByCashier(Long cashierId);
 }

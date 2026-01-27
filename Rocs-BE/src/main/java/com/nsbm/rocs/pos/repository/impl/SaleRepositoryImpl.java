@@ -100,6 +100,18 @@ public class SaleRepositoryImpl implements SaleRepository {
     }
 
     @Override
+    public List<Sale> findAll() {
+        String sql = "SELECT * FROM sales ORDER BY sale_id DESC";
+        return jdbcTemplate.query(sql, saleRowMapper);
+    }
+
+    @Override
+    public List<Sale> findByPaymentStatus(String status) {
+        String sql = "SELECT * FROM sales WHERE payment_status = ? ORDER BY sale_id DESC";
+        return jdbcTemplate.query(sql, saleRowMapper, status);
+    }
+
+    @Override
     public Optional<Sale> findById(Long saleId) {
         try {
             String sql = "SELECT * FROM sales WHERE sale_id = ?";
@@ -141,5 +153,12 @@ public class SaleRepositoryImpl implements SaleRepository {
         String sql = "SELECT COUNT(*) FROM sales WHERE shift_id = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, shiftId);
         return count != null ? count : 0;
+    }
+
+    @Override
+    public java.math.BigDecimal sumNetTotalByShiftId(Long shiftId) {
+        String sql = "SELECT SUM(net_total) FROM sales WHERE shift_id = ?";
+        java.math.BigDecimal sum = jdbcTemplate.queryForObject(sql, java.math.BigDecimal.class, shiftId);
+        return sum != null ? sum : java.math.BigDecimal.ZERO;
     }
 }

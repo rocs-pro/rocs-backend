@@ -34,6 +34,9 @@ public class Payment {
     @Column(name = "card_last4")
     private String cardLast4;
 
+    @Column(name = "bank_name")
+    private String bankName; // New field for card payments
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

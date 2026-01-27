@@ -18,7 +18,7 @@ public class SaleItemResponse {
     private String barcode;
     private Long serialId;
     private String serialNo;
-    private Integer quantity;
+    private BigDecimal quantity;
     private BigDecimal unitPrice;
     private BigDecimal discount;
     private BigDecimal taxRate;

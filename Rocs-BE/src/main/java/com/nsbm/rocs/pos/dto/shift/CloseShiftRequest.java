@@ -12,6 +12,9 @@ public class CloseShiftRequest {
 
     private String notes; // Optional notes
 
+    private String supervisorUsername;
+    private String supervisorPassword;
+
     public CloseShiftRequest() {}
 
     public CloseShiftRequest(BigDecimal closingCash, String notes) {
@@ -35,11 +38,28 @@ public class CloseShiftRequest {
         this.notes = notes;
     }
 
+    public String getSupervisorUsername() {
+        return supervisorUsername;
+    }
+
+    public void setSupervisorUsername(String supervisorUsername) {
+        this.supervisorUsername = supervisorUsername;
+    }
+
+    public String getSupervisorPassword() {
+        return supervisorPassword;
+    }
+
+    public void setSupervisorPassword(String supervisorPassword) {
+        this.supervisorPassword = supervisorPassword;
+    }
+
     @Override
     public String toString() {
         return "CloseShiftRequest{" +
                 "closingCash=" + closingCash +
                 ", notes='" + notes + '\'' +
+                ", supervisorUsername='" + supervisorUsername + '\'' +
                 '}';
     }
 }

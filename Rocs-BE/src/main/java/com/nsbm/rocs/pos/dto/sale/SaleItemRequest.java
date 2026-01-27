@@ -21,7 +21,7 @@ public class SaleItemRequest {
 
     @NotNull(message = "Quantity is required")
     @Positive(message = "Quantity must be positive")
-    private Integer quantity;
+    private BigDecimal quantity;
 
     @NotNull(message = "Unit price is required")
     @Positive(message = "Unit price must be positive")

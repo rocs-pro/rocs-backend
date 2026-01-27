@@ -1,6 +1,7 @@
 package com.nsbm.rocs.pos.repository;
 
 import com.nsbm.rocs.entity.pos.Sale;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -53,4 +54,24 @@ public interface SaleRepository {
      * @return Count
      */
     int countByShiftId(Long shiftId);
+
+    /**
+     * Get all sales
+     * @return List of sales
+     */
+    List<Sale> findAll();
+
+    /**
+     * Find by payment status
+     * @param status - Status (PAID, etc)
+     * @return List of sales
+     */
+    List<Sale> findByPaymentStatus(String status);
+
+    /**
+     * Get total net sales amount for a shift
+     * @param shiftId - Shift ID
+     * @return Total net sales
+     */
+    BigDecimal sumNetTotalByShiftId(Long shiftId);
 }

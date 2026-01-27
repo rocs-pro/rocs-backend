@@ -14,4 +14,10 @@ public class Branch {
     @Column(name = "branch_id", nullable = false)
     private Long id;
 
+    @Column(nullable = false, length = 100)
+    private String name;
+
+    @Column(length = 200)
+    private String location;
+
 }

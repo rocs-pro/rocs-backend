@@ -38,7 +38,7 @@ public class SaleItemRepositoryImpl implements SaleItemRepositoryCustom {
                     ps.setNull(3, java.sql.Types.BIGINT);
                 }
 
-                ps.setInt(4, item.getQty());
+                ps.setBigDecimal(4, item.getQty());
                 ps.setBigDecimal(5, item.getUnitPrice());
                 ps.setBigDecimal(6, item.getDiscount());
                 ps.setBigDecimal(7, item.getTaxRate());
@@ -75,7 +75,7 @@ public class SaleItemRepositoryImpl implements SaleItemRepositoryCustom {
             }
             dto.setSerialNo(rs.getString("serial_no"));
 
-            dto.setQuantity(rs.getInt("qty"));
+            dto.setQuantity(rs.getBigDecimal("qty"));
             dto.setUnitPrice(rs.getBigDecimal("unit_price"));
             dto.setDiscount(rs.getBigDecimal("discount"));
             dto.setTaxRate(rs.getBigDecimal("tax_rate"));

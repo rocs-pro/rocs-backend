@@ -6,6 +6,7 @@ import com.nsbm.rocs.auth.dto.RegisterResponseDTO;
 import com.nsbm.rocs.entity.main.UserProfile;
 import com.nsbm.rocs.entity.main.Branch;
 import com.nsbm.rocs.entity.enums.Role;
+import com.nsbm.rocs.entity.enums.AccountStatus;
 import com.nsbm.rocs.auth.repo.UserProfileRepo;
 import com.nsbm.rocs.auth.repo.BranchRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -46,6 +48,10 @@ public class AuthService {
         return userProfile.orElse(null);
     }
 
+    public List<Branch> getAllBranches() {
+        return branchRepo.findAll();
+    }
+
     //    register user
     public RegisterResponseDTO registerUser(RegisterRequestDTO registerRequestDTO) {
 
@@ -73,10 +79,10 @@ public class AuthService {
         userProfile.setEmployeeId(registerRequestDTO.getEmployeeId());
         userProfile.setBranch(branch);
 
-        // Role is assigned by Admin later.
-        // AccountStatus is set to PENDING_VERIFICATION by @PrePersist in entity or explicitly here.
-        // userProfile.setRole(null);
-        // userProfile.setAccountStatus(AccountStatus.PENDING_VERIFICATION);
+        // Role is assigned by Admin later, so it remains null initially.
+        userProfile.setRole(null);
+        // Set account status to PENDING explicitly
+        userProfile.setAccountStatus(AccountStatus.PENDING);
 
         UserProfile registerUser = userProfileRepo.save(userProfile);
 

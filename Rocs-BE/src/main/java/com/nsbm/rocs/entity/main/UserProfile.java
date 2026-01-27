@@ -51,9 +51,6 @@ public class UserProfile implements UserDetails {
     @Column(length = 40)
     private Role role; // Assigned ONLY after approval
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "requested_role", length = 40)
-    private Role requestedRole;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -86,7 +83,7 @@ public class UserProfile implements UserDetails {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-        this.accountStatus = AccountStatus.PENDING_VERIFICATION; // ✅ FIXED
+        this.accountStatus = AccountStatus.PENDING;
         this.emailVerified = false;
     }
 

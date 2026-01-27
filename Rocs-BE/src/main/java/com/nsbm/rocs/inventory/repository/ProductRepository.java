@@ -1,6 +1,8 @@
 package com.nsbm.rocs.inventory.repository;
 
 import com.nsbm.rocs.entity.inventory.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,6 +15,8 @@ import java.util.Optional;
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByIsActiveTrue();
+
+    Page<Product> findByIsActiveTrue(Pageable pageable);
 
     Optional<Product> findBySku(String sku);
 
@@ -31,9 +35,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     boolean existsByBarcode(String barcode);
 
     @Query("SELECT p FROM InventoryProduct p WHERE " +
+           "p.isActive = true AND (" +
            "LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "LOWER(p.sku) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(p.barcode) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+           "LOWER(p.barcode) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<Product> searchProducts(@Param("keyword") String keyword);
 }
-

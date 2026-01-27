@@ -23,6 +23,8 @@ public class PaymentRequest {
 
     private String referenceNo;
     private String cardLast4;
+    private String bankName; // Added field
+
     @Override
     public String toString() {
         return "PaymentRequest{" +

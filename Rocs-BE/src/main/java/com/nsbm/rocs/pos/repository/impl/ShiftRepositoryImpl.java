@@ -180,4 +180,16 @@ public class ShiftRepositoryImpl implements ShiftRepository {
                 "LIMIT ?";
         return jdbcTemplate.query(sql, shiftRowMapper, cashierId, limit);
     }
+
+
+    @Override
+    public Optional<CashShift> findActiveShiftByCashier(Long cashierId) {
+        try {
+            String sql = "SELECT * FROM cash_shifts WHERE cashier_id = ? AND status = 'OPEN' ORDER BY opened_at DESC LIMIT 1";
+            CashShift shift = jdbcTemplate.queryForObject(sql, shiftRowMapper, cashierId);
+            return Optional.ofNullable(shift);
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
+    }
 }
