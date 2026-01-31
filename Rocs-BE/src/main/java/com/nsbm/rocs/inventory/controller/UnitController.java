@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,29 +21,20 @@ public class UnitController {
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllUnits() {
         List<UnitDTO> units = unitService.getAllUnits();
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", units);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(units, "Units retrieved successfully"));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getUnitById(@PathVariable Long id) {
         UnitDTO unit = unitService.getUnitById(id);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", unit);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(unit, "Unit retrieved successfully"));
     }
 
     @PostMapping
     public ResponseEntity<Map<String, Object>> createUnit(@Valid @RequestBody UnitDTO unitDTO) {
         UnitDTO createdUnit = unitService.createUnit(unitDTO);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Unit created successfully");
-        response.put("data", createdUnit);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(InventoryResponseBuilder.build(createdUnit, "Unit created successfully"));
     }
 
     @PutMapping("/{id}")
@@ -52,20 +42,12 @@ public class UnitController {
             @PathVariable Long id,
             @Valid @RequestBody UnitDTO unitDTO) {
         UnitDTO updatedUnit = unitService.updateUnit(id, unitDTO);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Unit updated successfully");
-        response.put("data", updatedUnit);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(updatedUnit, "Unit updated successfully"));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deleteUnit(@PathVariable Long id) {
         unitService.deleteUnit(id);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Unit deleted successfully");
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.buildMessage("Unit deleted successfully"));
     }
 }
-

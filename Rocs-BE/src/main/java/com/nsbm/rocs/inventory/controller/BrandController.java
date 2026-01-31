@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,38 +21,26 @@ public class BrandController {
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllBrands() {
         List<BrandDTO> brands = brandService.getAllBrands();
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", brands);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(brands, "Brands retrieved successfully"));
     }
 
     @GetMapping("/active")
     public ResponseEntity<Map<String, Object>> getActiveBrands() {
         List<BrandDTO> brands = brandService.getActiveBrands();
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", brands);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(brands, "Active brands retrieved successfully"));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getBrandById(@PathVariable Long id) {
         BrandDTO brand = brandService.getBrandById(id);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", brand);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(brand, "Brand retrieved successfully"));
     }
 
     @PostMapping
     public ResponseEntity<Map<String, Object>> createBrand(@Valid @RequestBody BrandDTO brandDTO) {
         BrandDTO createdBrand = brandService.createBrand(brandDTO);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Brand created successfully");
-        response.put("data", createdBrand);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(InventoryResponseBuilder.build(createdBrand, "Brand created successfully"));
     }
 
     @PutMapping("/{id}")
@@ -61,29 +48,18 @@ public class BrandController {
             @PathVariable Long id,
             @Valid @RequestBody BrandDTO brandDTO) {
         BrandDTO updatedBrand = brandService.updateBrand(id, brandDTO);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Brand updated successfully");
-        response.put("data", updatedBrand);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(updatedBrand, "Brand updated successfully"));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deleteBrand(@PathVariable Long id) {
         brandService.deleteBrand(id);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Brand deleted successfully");
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.buildMessage("Brand deleted successfully"));
     }
 
     @PatchMapping("/{id}/deactivate")
     public ResponseEntity<Map<String, Object>> deactivateBrand(@PathVariable Long id) {
         brandService.deactivateBrand(id);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Brand deactivated successfully");
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.buildMessage("Brand deactivated successfully"));
     }
 }
-

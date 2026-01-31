@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,38 +21,26 @@ public class CategoryController {
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllCategories() {
         List<CategoryDTO> categories = categoryService.getAllCategories();
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", categories);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(categories, "Categories retrieved successfully"));
     }
 
     @GetMapping("/active")
     public ResponseEntity<Map<String, Object>> getActiveCategories() {
         List<CategoryDTO> categories = categoryService.getActiveCategories();
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", categories);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(categories, "Active categories retrieved successfully"));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getCategoryById(@PathVariable Long id) {
         CategoryDTO category = categoryService.getCategoryById(id);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", category);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(category, "Category retrieved successfully"));
     }
 
     @PostMapping
     public ResponseEntity<Map<String, Object>> createCategory(@Valid @RequestBody CategoryDTO categoryDTO) {
         CategoryDTO createdCategory = categoryService.createCategory(categoryDTO);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Category created successfully");
-        response.put("data", createdCategory);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(InventoryResponseBuilder.build(createdCategory, "Category created successfully"));
     }
 
     @PutMapping("/{id}")
@@ -61,29 +48,18 @@ public class CategoryController {
             @PathVariable Long id,
             @Valid @RequestBody CategoryDTO categoryDTO) {
         CategoryDTO updatedCategory = categoryService.updateCategory(id, categoryDTO);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Category updated successfully");
-        response.put("data", updatedCategory);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(updatedCategory, "Category updated successfully"));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Category deleted successfully");
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.buildMessage("Category deleted successfully"));
     }
 
     @PatchMapping("/{id}/deactivate")
     public ResponseEntity<Map<String, Object>> deactivateCategory(@PathVariable Long id) {
         categoryService.deactivateCategory(id);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Category deactivated successfully");
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.buildMessage("Category deactivated successfully"));
     }
 }
-

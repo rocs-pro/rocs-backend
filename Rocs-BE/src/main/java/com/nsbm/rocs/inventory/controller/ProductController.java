@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,98 +21,62 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllProducts() {
         List<ProductDTO> products = productService.getAllProducts();
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", products);
-        response.put("count", products.size());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(products, "Products retrieved successfully"));
     }
 
     @GetMapping("/active")
     public ResponseEntity<Map<String, Object>> getActiveProducts() {
         List<ProductDTO> products = productService.getActiveProducts();
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", products);
-        response.put("count", products.size());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(products, "Active products retrieved successfully"));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getProductById(@PathVariable Long id) {
         ProductDTO product = productService.getProductById(id);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", product);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(product, "Product retrieved successfully"));
     }
 
     @GetMapping("/sku/{sku}")
     public ResponseEntity<Map<String, Object>> getProductBySku(@PathVariable String sku) {
         ProductDTO product = productService.getProductBySku(sku);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", product);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(product, "Product retrieved successfully"));
     }
 
     @GetMapping("/barcode/{barcode}")
     public ResponseEntity<Map<String, Object>> getProductByBarcode(@PathVariable String barcode) {
         ProductDTO product = productService.getProductByBarcode(barcode);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", product);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(product, "Product retrieved successfully"));
     }
 
     @GetMapping("/category/{categoryId}")
     public ResponseEntity<Map<String, Object>> getProductsByCategory(@PathVariable Long categoryId) {
         List<ProductDTO> products = productService.getProductsByCategory(categoryId);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", products);
-        response.put("count", products.size());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(products, "Products retrieved successfully"));
     }
 
     @GetMapping("/subcategory/{subCategoryId}")
     public ResponseEntity<Map<String, Object>> getProductsBySubCategory(@PathVariable Long subCategoryId) {
         List<ProductDTO> products = productService.getProductsBySubCategory(subCategoryId);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", products);
-        response.put("count", products.size());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(products, "Products retrieved successfully"));
     }
 
     @GetMapping("/brand/{brandId}")
     public ResponseEntity<Map<String, Object>> getProductsByBrand(@PathVariable Long brandId) {
         List<ProductDTO> products = productService.getProductsByBrand(brandId);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", products);
-        response.put("count", products.size());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(products, "Products retrieved successfully"));
     }
 
     @GetMapping("/search")
     public ResponseEntity<Map<String, Object>> searchProducts(@RequestParam String keyword) {
         List<ProductDTO> products = productService.searchProducts(keyword);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", products);
-        response.put("count", products.size());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(products, "Products retrieved successfully"));
     }
 
     @PostMapping
     public ResponseEntity<Map<String, Object>> createProduct(@Valid @RequestBody ProductDTO productDTO) {
         ProductDTO createdProduct = productService.createProduct(productDTO);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Product created successfully");
-        response.put("data", createdProduct);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(InventoryResponseBuilder.build(createdProduct, "Product created successfully"));
     }
 
     @PutMapping("/{id}")
@@ -121,29 +84,18 @@ public class ProductController {
             @PathVariable Long id,
             @Valid @RequestBody ProductDTO productDTO) {
         ProductDTO updatedProduct = productService.updateProduct(id, productDTO);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Product updated successfully");
-        response.put("data", updatedProduct);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.build(updatedProduct, "Product updated successfully"));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Product deleted successfully");
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.buildMessage("Product deleted successfully"));
     }
 
     @PatchMapping("/{id}/deactivate")
     public ResponseEntity<Map<String, Object>> deactivateProduct(@PathVariable Long id) {
         productService.deactivateProduct(id);
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Product deactivated successfully");
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(InventoryResponseBuilder.buildMessage("Product deactivated successfully"));
     }
 }
-
