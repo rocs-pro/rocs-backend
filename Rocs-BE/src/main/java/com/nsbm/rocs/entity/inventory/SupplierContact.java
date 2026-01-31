@@ -31,8 +31,6 @@ public class SupplierContact {
     @Column(name = "phone", length = 50)
     private String phone;
 
-    @Column(name = "mobile", length = 50)
-    private String mobile;
 
     @Column(name = "email", length = 150)
     private String email;
