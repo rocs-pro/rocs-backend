@@ -10,8 +10,6 @@ import com.nsbm.rocs.inventory.dto.SupplierRequestDTO;
 import com.nsbm.rocs.inventory.dto.SupplierResponseDTO;
 import com.nsbm.rocs.inventory.exception.DuplicateResourceException;
 import com.nsbm.rocs.inventory.exception.ResourceNotFoundException;
-import com.nsbm.rocs.inventory.repository.SupplierBranchRepository;
-import com.nsbm.rocs.inventory.repository.SupplierContactRepository;
 import com.nsbm.rocs.inventory.repository.SupplierRepository;
 import com.nsbm.rocs.inventory.service.SupplierService;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +25,6 @@ import java.util.stream.Collectors;
 public class SupplierServiceImpl implements SupplierService {
 
     private final SupplierRepository supplierRepository;
-    private final SupplierContactRepository contactRepository;
-    private final SupplierBranchRepository branchRepository;
 
     @Override
     public SupplierResponseDTO createSupplier(SupplierRequestDTO requestDTO) {
@@ -74,7 +70,8 @@ public class SupplierServiceImpl implements SupplierService {
 
     private void validateDuplicateCode(String code, Long existingId) {
         supplierRepository.findByCode(code).ifPresent(existing -> {
-            if (existingId == null || !existing.getSupplierId().equals(existingId)) {
+            boolean isDuplicate = existingId == null || !existingId.equals(existing.getSupplierId());
+            if (isDuplicate) {
                 throw new DuplicateResourceException("Supplier with code " + code + " already exists");
             }
         });
@@ -92,26 +89,11 @@ public class SupplierServiceImpl implements SupplierService {
         supplier.setAddressLine1(dto.getAddressLine1());
         supplier.setAddressLine2(dto.getAddressLine2());
         supplier.setCity(dto.getCity());
-        supplier.setState(dto.getState());
-        supplier.setPostalCode(dto.getPostalCode());
         supplier.setCountry(dto.getCountry());
         supplier.setTaxId(dto.getTaxId());
-        supplier.setVatNumber(dto.getVatNumber());
-        supplier.setBusinessRegistrationNo(dto.getBusinessRegistrationNo());
         supplier.setCreditDays(dto.getCreditDays());
         supplier.setCreditLimit(dto.getCreditLimit());
-        supplier.setPaymentTerms(dto.getPaymentTerms());
-        supplier.setBankName(dto.getBankName());
-        supplier.setBankAccountNo(dto.getBankAccountNo());
-        supplier.setBankBranch(dto.getBankBranch());
-        supplier.setSupplierType(dto.getSupplierType());
-        supplier.setSupplierCategory(dto.getSupplierCategory());
-        supplier.setRating(dto.getRating());
         supplier.setIsActive(dto.getIsActive());
-        supplier.setIsVerified(dto.getIsVerified());
-        supplier.setBlacklisted(dto.getBlacklisted());
-        supplier.setBlacklistReason(dto.getBlacklistReason());
-        supplier.setNotes(dto.getNotes());
         supplier.setCreatedBy(dto.getCreatedBy());
 
         supplier.getContacts().clear();
@@ -121,7 +103,6 @@ public class SupplierServiceImpl implements SupplierService {
             contact.setName(contactDTO.getName());
             contact.setDesignation(contactDTO.getDesignation());
             contact.setPhone(contactDTO.getPhone());
-            contact.setMobile(contactDTO.getMobile());
             contact.setEmail(contactDTO.getEmail());
             contact.setIsPrimary(contactDTO.getIsPrimary());
             supplier.getContacts().add(contact);
@@ -158,26 +139,11 @@ public class SupplierServiceImpl implements SupplierService {
         dto.setAddressLine1(supplier.getAddressLine1());
         dto.setAddressLine2(supplier.getAddressLine2());
         dto.setCity(supplier.getCity());
-        dto.setState(supplier.getState());
-        dto.setPostalCode(supplier.getPostalCode());
         dto.setCountry(supplier.getCountry());
         dto.setTaxId(supplier.getTaxId());
-        dto.setVatNumber(supplier.getVatNumber());
-        dto.setBusinessRegistrationNo(supplier.getBusinessRegistrationNo());
         dto.setCreditDays(supplier.getCreditDays());
         dto.setCreditLimit(supplier.getCreditLimit());
-        dto.setPaymentTerms(supplier.getPaymentTerms());
-        dto.setBankName(supplier.getBankName());
-        dto.setBankAccountNo(supplier.getBankAccountNo());
-        dto.setBankBranch(supplier.getBankBranch());
-        dto.setSupplierType(supplier.getSupplierType());
-        dto.setSupplierCategory(supplier.getSupplierCategory());
-        dto.setRating(supplier.getRating());
         dto.setIsActive(supplier.getIsActive());
-        dto.setIsVerified(supplier.getIsVerified());
-        dto.setBlacklisted(supplier.getBlacklisted());
-        dto.setBlacklistReason(supplier.getBlacklistReason());
-        dto.setNotes(supplier.getNotes());
         dto.setCreatedBy(supplier.getCreatedBy());
         dto.setCreatedAt(supplier.getCreatedAt());
         dto.setUpdatedAt(supplier.getUpdatedAt());
@@ -189,7 +155,6 @@ public class SupplierServiceImpl implements SupplierService {
                     contactDTO.setName(contact.getName());
                     contactDTO.setDesignation(contact.getDesignation());
                     contactDTO.setPhone(contact.getPhone());
-                    contactDTO.setMobile(contact.getMobile());
                     contactDTO.setEmail(contact.getEmail());
                     contactDTO.setIsPrimary(contact.getIsPrimary());
                     return contactDTO;
