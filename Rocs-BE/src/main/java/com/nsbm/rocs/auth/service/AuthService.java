@@ -105,7 +105,7 @@ public class AuthService {
                 .authenticate(new UsernamePasswordAuthenticationToken(username, password));
         if (authentication.isAuthenticated()) {
             Map<String,Object> claims = new HashMap<>();
-            claims.put("role", Role.ADMIN);
+            claims.put("role", existUserByUsername.getRole() == null ? "PENDING" : existUserByUsername.getRole().name());
             claims.put("username", existUserByUsername.getUsername());
             claims.put("email", existUserByUsername.getEmail());
             claims.put("userId", existUserByUsername.getUserId());
