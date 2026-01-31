@@ -31,26 +31,11 @@ public class SupplierRequestDTO {
     private String addressLine1;
     private String addressLine2;
     private String city;
-    private String state;
-    private String postalCode;
     private String country;
     private String taxId;
-    private String vatNumber;
-    private String businessRegistrationNo;
     private Integer creditDays;
     private BigDecimal creditLimit;
-    private String paymentTerms;
-    private String bankName;
-    private String bankAccountNo;
-    private String bankBranch;
-    private String supplierType;
-    private String supplierCategory;
-    private Integer rating;
     private Boolean isActive = true;
-    private Boolean isVerified = false;
-    private Boolean blacklisted = false;
-    private String blacklistReason;
-    private String notes;
     private Long createdBy;
 
     @Valid

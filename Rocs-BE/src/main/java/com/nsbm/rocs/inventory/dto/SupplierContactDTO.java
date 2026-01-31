@@ -21,8 +21,6 @@ public class SupplierContactDTO {
     @Size(max = 50, message = "Phone must not exceed 50 characters")
     private String phone;
 
-    @Size(max = 50, message = "Mobile must not exceed 50 characters")
-    private String mobile;
 
     @Size(max = 150, message = "Email must not exceed 150 characters")
     private String email;
