@@ -55,7 +55,7 @@ public class SecurityConfig {
                 registry.addMapping("/**")
                         .allowedOriginPatterns("*")
                         .allowCredentials(true)
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                         .allowedHeaders("*");
             }
         };
@@ -65,7 +65,11 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        .requestMatchers("/auth/**","/public/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**", "/public/**").permitAll()
+                        // Allow manager dashboard endpoints for development
+                        .requestMatchers("/api/manager/**").permitAll()
+                        .requestMatchers("/api/accounting/**").permitAll()
+                        .requestMatchers("/api/reports/**").permitAll()
                         .requestMatchers("/test/**").hasAnyAuthority("ADMIN")
                         .anyRequest().authenticated())
                 .cors(Customizer.withDefaults())

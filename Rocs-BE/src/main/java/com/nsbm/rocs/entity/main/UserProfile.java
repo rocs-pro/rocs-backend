@@ -4,10 +4,7 @@ package com.nsbm.rocs.entity.main;
 import com.nsbm.rocs.entity.enums.AccountStatus;
 import com.nsbm.rocs.entity.enums.Role;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -27,40 +24,85 @@ public class UserProfile implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userId;
-    @Column(unique = true,nullable = false,length = 100)
+
+    @ManyToOne
+    @JoinColumn(name = "branch_id")
+    private Branch branch;
+
+    @Column(nullable = false, unique = true, length = 100)
     private String username;
-    @Column(length = 200)
-    private String fullName;
-    @Column(nullable = false, unique = true)
+
+    @Column(nullable = false, unique = true, length = 150)
     private String email;
+
     @Column(nullable = false, length = 200)
     private String password;
+
+    @Column(nullable = false, length = 150)
+    private String fullName;
+
+    @Column(length = 30)
+    private String phone;
+
+    @Column(unique = true, length = 50)
+    private String employeeId;
+
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Role role;
+    @Column(length = 40)
+    private Role role; // Assigned ONLY after approval
+
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "requested_role", length = 40)
+    private Role requestedRole;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
     private AccountStatus accountStatus;
-    @Column(nullable = false,updatable = false)
+
+    @ManyToOne
+    @JoinColumn(name = "approved_by")
+    private UserProfile approvedBy;
+
+    private LocalDateTime approvedAt;
+
+    @Column(columnDefinition = "TEXT")
+    private String rejectionReason;
+
+    private int failedLoginAttempts;
+    private LocalDateTime lastLogin;
+    private boolean mustChangePassword;
+
+    @Column(unique = true, length = 100)
+    private String registrationToken;
+
+    private boolean emailVerified;
+    private LocalDateTime emailVerifiedAt;
+
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        if (accountStatus == null) {
-            accountStatus = AccountStatus.ACTIVE;
-        }
+        this.createdAt = LocalDateTime.now();
+        this.accountStatus = AccountStatus.PENDING_VERIFICATION; // ✅ FIXED
+        this.emailVerified = false;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 
 
+
     @Override
+    @NonNull
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role.name()));
-    }
-
-    @Override
-    public String getUsername() {
-        return username;
+        return role == null
+                ? List.of()
+                : List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override
@@ -70,7 +112,7 @@ public class UserProfile implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return accountStatus != AccountStatus.SUSPENDED;
     }
 
     @Override
@@ -80,6 +122,6 @@ public class UserProfile implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return accountStatus == AccountStatus.ACTIVE; // ✅ CRITICAL
     }
 }

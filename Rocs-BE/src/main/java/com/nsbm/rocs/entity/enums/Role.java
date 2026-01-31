@@ -6,6 +6,5 @@ public enum Role {
     BRANCH_MANAGER,
     CASHIER,
     STORE_KEEPER,
-    HR_MANAGER,
-    AUDITOR
+    SUPERVISOR
 }
