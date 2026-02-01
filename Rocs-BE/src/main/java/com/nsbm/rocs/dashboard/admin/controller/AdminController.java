@@ -1,4 +1,4 @@
-package com.nsbm.rocs.dashboard.admin;
+package com.nsbm.rocs.dashboard.admin.controller;
 
 public class AdminController {
 }
