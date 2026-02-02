@@ -5,7 +5,7 @@ public class SupplierContactDTO {
     private String name;
     private String designation;
     private String phone;
-    private String mobile;
+    // mobile field removed - not in database schema
     private String email;
     private Boolean isPrimary;
 
@@ -22,8 +22,7 @@ public class SupplierContactDTO {
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
 
-    public String getMobile() { return mobile; }
-    public void setMobile(String mobile) { this.mobile = mobile; }
+    // mobile getter/setter removed
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }

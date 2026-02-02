@@ -9,8 +9,7 @@ package com.rocs.inventory.entity;
     public void setEmail(String email) { this.email = email; }
     public String getEmail() { return email; }
 
-    public void setMobile(String mobile) { this.mobile = mobile; }
-    public String getMobile() { return mobile; }
+    // mobile getter/setter removed
 
     public void setPhone(String phone) { this.phone = phone; }
     public String getPhone() { return phone; }
@@ -37,8 +36,7 @@ package com.rocs.inventory.entity;
     private String email;
     @Column(name = "email")
 
-    private String mobile;
-    @Column(name = "mobile")
+    // mobile field removed - not in database schema
 
     private String phone;
     @Column(name = "phone")
