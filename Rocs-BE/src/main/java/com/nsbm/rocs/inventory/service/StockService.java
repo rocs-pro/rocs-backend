@@ -1,7 +1,6 @@
 package com.nsbm.rocs.inventory.service;
 
 import com.nsbm.rocs.entity.inventory.Stock;
-import com.nsbm.rocs.entity.inventory.Product;
 import com.nsbm.rocs.inventory.dto.StockDTO;
 import com.nsbm.rocs.inventory.dto.StockAdjustmentDTO;
 import com.nsbm.rocs.inventory.dto.StockReportDTO;

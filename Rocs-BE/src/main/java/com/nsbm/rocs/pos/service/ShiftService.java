@@ -68,7 +68,7 @@ public class ShiftService {
                         new UsernamePasswordAuthenticationToken(username, password)
                 );
 
-                if (auth == null || !auth.isAuthenticated()) {
+                if (!auth.isAuthenticated()) {
                     throw new RuntimeException("Invalid supervisor credentials");
                 }
 

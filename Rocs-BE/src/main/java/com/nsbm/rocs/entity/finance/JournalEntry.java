@@ -36,7 +36,7 @@ public class JournalEntry {
     @Column(name = "reference_no", length = 100)
     private String referenceNo;
 
-    @Column(length = 255)
+    @Column()
     private String memo;
 
     @Column(name = "total_debit", precision = 15, scale = 2)

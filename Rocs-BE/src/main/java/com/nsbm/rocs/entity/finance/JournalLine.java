@@ -31,7 +31,7 @@ public class JournalLine {
     @Column(precision = 15, scale = 2)
     private BigDecimal credit = BigDecimal.ZERO;
 
-    @Column(length = 255)
+    @Column()
     private String description;
 }
 

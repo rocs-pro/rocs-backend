@@ -22,7 +22,7 @@ public class UserSession {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(unique = true, nullable = false, length = 255)
+    @Column(unique = true, nullable = false)
     private String token;
 
     @Column(name = "ip_address", length = 45)
