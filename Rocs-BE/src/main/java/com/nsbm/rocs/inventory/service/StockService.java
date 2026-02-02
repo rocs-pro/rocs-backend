@@ -1,21 +1,19 @@
 package com.nsbm.rocs.inventory.service;
 
-import com.nsbm.rocs.inventory.dto.StockAdjustmentDTO;
+import com.nsbm.rocs.entity.inventory.Stock;
+import com.nsbm.rocs.entity.inventory.Product;
 import com.nsbm.rocs.inventory.dto.StockDTO;
+import com.nsbm.rocs.inventory.dto.StockAdjustmentDTO;
 import com.nsbm.rocs.inventory.dto.StockReportDTO;
 import com.nsbm.rocs.inventory.dto.LowStockAlertDTO;
-import com.nsbm.rocs.entity.inventory.Product;
-import com.nsbm.rocs.entity.inventory.Stock;
-import com.nsbm.rocs.inventory.exception.InsufficientStockException;
 import com.nsbm.rocs.inventory.exception.ResourceNotFoundException;
-import com.nsbm.rocs.inventory.repository.ProductRepository;
 import com.nsbm.rocs.inventory.repository.StockRepository;
+import com.nsbm.rocs.inventory.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,223 +27,194 @@ public class StockService {
 
     public List<StockDTO> getAllStock() {
         return stockRepository.findAll().stream()
-                .map(this::convertToDTO)
+                .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
 
     public List<StockDTO> getStockByBranch(Long branchId) {
         return stockRepository.findByBranchId(branchId).stream()
-                .map(this::convertToDTO)
+                .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
 
     public List<StockDTO> getStockByProduct(Long productId) {
         return stockRepository.findByProductId(productId).stream()
-                .map(this::convertToDTO)
+                .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
 
     public StockDTO getStockByBranchAndProduct(Long branchId, Long productId) {
-        Stock stock = stockRepository.findByBranchIdAndProductId(branchId, productId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Stock not found for branch " + branchId + " and product " + productId));
-        return convertToDTO(stock);
+        return stockRepository.findByBranchIdAndProductId(branchId, productId)
+                .map(this::mapToDTO)
+                .orElseThrow(() -> new ResourceNotFoundException("Stock not found"));
     }
 
-    @Transactional
     public StockDTO adjustStock(StockAdjustmentDTO adjustmentDTO) {
-        if (adjustmentDTO.getBranchId() == null || adjustmentDTO.getProductId() == null) {
-            throw new IllegalArgumentException("branchId and productId are required");
-        }
-        Integer delta = adjustmentDTO.getAdjustmentQty();
-        if (delta == null || delta == 0) {
-            throw new IllegalArgumentException("adjustmentQty must be non-zero");
+        Stock stock = stockRepository.findByBranchIdAndProductId(
+                adjustmentDTO.getBranchId(),
+                adjustmentDTO.getProductId()
+        ).orElseGet(() -> {
+            Stock newStock = new Stock();
+            newStock.setBranchId(adjustmentDTO.getBranchId());
+            newStock.setProductId(adjustmentDTO.getProductId());
+            newStock.setQuantity(BigDecimal.ZERO);
+            newStock.setReservedQty(BigDecimal.ZERO);
+            newStock.setAvailableQty(BigDecimal.ZERO);
+            return newStock;
+        });
+
+        BigDecimal newQty;
+        switch (adjustmentDTO.getAdjustmentType().toUpperCase()) {
+            case "ADD":
+                newQty = stock.getQuantity().add(adjustmentDTO.getQuantity());
+                break;
+            case "SUBTRACT":
+                newQty = stock.getQuantity().subtract(adjustmentDTO.getQuantity());
+                if (newQty.compareTo(BigDecimal.ZERO) < 0) {
+                    throw new RuntimeException("Insufficient stock");
+                }
+                break;
+            case "SET":
+                newQty = adjustmentDTO.getQuantity();
+                break;
+            default:
+                throw new RuntimeException("Invalid adjustment type: " + adjustmentDTO.getAdjustmentType());
         }
 
-        Stock stock = stockRepository.findStockForUpdate(adjustmentDTO.getBranchId(), adjustmentDTO.getProductId())
-                .orElseGet(() -> stockRepository.save(newStock(adjustmentDTO.getBranchId(), adjustmentDTO.getProductId())));
+        stock.setQuantity(newQty);
+        stock.setAvailableQty(newQty.subtract(stock.getReservedQty()));
 
-        if (delta > 0) {
-            stockRepository.incrementQuantity(adjustmentDTO.getBranchId(), adjustmentDTO.getProductId(), delta);
-        } else {
-            int updated = stockRepository.decrementQuantityIfAvailable(adjustmentDTO.getBranchId(), adjustmentDTO.getProductId(), Math.abs(delta));
-            if (updated == 0) {
-                throw new InsufficientStockException("Insufficient available stock to deduct " + Math.abs(delta));
-            }
-        }
-
-        Stock refreshed = stockRepository.findByBranchIdAndProductId(adjustmentDTO.getBranchId(), adjustmentDTO.getProductId())
-                .orElseThrow(() -> new ResourceNotFoundException("Stock not found after adjust"));
-        return convertToDTO(refreshed);
+        Stock saved = stockRepository.save(stock);
+        return mapToDTO(saved);
     }
 
-    @Transactional
+    public List<StockDTO> getLowStock(Long branchId) {
+        return stockRepository.findLowStockByBranch(branchId).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<StockDTO> getOutOfStock(Long branchId) {
+        return stockRepository.findOutOfStockByBranch(branchId).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
     public StockDTO addStock(Long branchId, Long productId, Integer quantity) {
-        validateStockInput(branchId, productId, quantity);
-
-        stockRepository.findStockForUpdate(branchId, productId)
-                .orElseGet(() -> stockRepository.save(newStock(branchId, productId)));
-
-        stockRepository.incrementQuantity(branchId, productId, quantity);
-        Stock refreshed = stockRepository.findByBranchIdAndProductId(branchId, productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Stock not found after add"));
-        return convertToDTO(refreshed);
+        StockAdjustmentDTO adjustment = new StockAdjustmentDTO();
+        adjustment.setBranchId(branchId);
+        adjustment.setProductId(productId);
+        adjustment.setQuantity(BigDecimal.valueOf(quantity));
+        adjustment.setAdjustmentType("ADD");
+        return adjustStock(adjustment);
     }
 
-    @Transactional
     public StockDTO removeStock(Long branchId, Long productId, Integer quantity) {
-        validateStockInput(branchId, productId, quantity);
-
-        stockRepository.findStockForUpdate(branchId, productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Stock not found for branch " + branchId + " and product " + productId));
-
-        int updated = stockRepository.decrementQuantityIfAvailable(branchId, productId, quantity);
-        if (updated == 0) {
-            throw new InsufficientStockException("Insufficient stock");
-        }
-        Stock refreshed = stockRepository.findByBranchIdAndProductId(branchId, productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Stock not found after remove"));
-        return convertToDTO(refreshed);
+        StockAdjustmentDTO adjustment = new StockAdjustmentDTO();
+        adjustment.setBranchId(branchId);
+        adjustment.setProductId(productId);
+        adjustment.setQuantity(BigDecimal.valueOf(quantity));
+        adjustment.setAdjustmentType("SUBTRACT");
+        return adjustStock(adjustment);
     }
 
-    @Transactional
     public StockDTO reserveStock(Long branchId, Long productId, Integer quantity) {
-        validateStockInput(branchId, productId, quantity);
+        Stock stock = stockRepository.findByBranchIdAndProductId(branchId, productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Stock not found"));
 
-        stockRepository.findStockForUpdate(branchId, productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Stock not found for branch " + branchId + " and product " + productId));
-
-        int updated = stockRepository.incrementReservedIfAvailable(branchId, productId, quantity);
-        if (updated == 0) {
-            throw new InsufficientStockException("Insufficient stock");
+        BigDecimal newReserved = stock.getReservedQty().add(BigDecimal.valueOf(quantity));
+        if (newReserved.compareTo(stock.getQuantity()) > 0) {
+            throw new RuntimeException("Cannot reserve more than available quantity");
         }
-        Stock refreshed = stockRepository.findByBranchIdAndProductId(branchId, productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Stock not found after reserve"));
-        return convertToDTO(refreshed);
+        stock.setReservedQty(newReserved);
+        stock.setAvailableQty(stock.getQuantity().subtract(newReserved));
+        return mapToDTO(stockRepository.save(stock));
     }
 
-    @Transactional
     public StockDTO releaseReservedStock(Long branchId, Long productId, Integer quantity) {
-        validateStockInput(branchId, productId, quantity);
+        Stock stock = stockRepository.findByBranchIdAndProductId(branchId, productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Stock not found"));
 
-        stockRepository.findStockForUpdate(branchId, productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Stock not found for branch " + branchId + " and product " + productId));
-
-        stockRepository.decrementReserved(branchId, productId, quantity);
-        Stock refreshed = stockRepository.findByBranchIdAndProductId(branchId, productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Stock not found after release"));
-        return convertToDTO(refreshed);
+        BigDecimal newReserved = stock.getReservedQty().subtract(BigDecimal.valueOf(quantity));
+        if (newReserved.compareTo(BigDecimal.ZERO) < 0) {
+            newReserved = BigDecimal.ZERO;
+        }
+        stock.setReservedQty(newReserved);
+        stock.setAvailableQty(stock.getQuantity().subtract(newReserved));
+        return mapToDTO(stockRepository.save(stock));
     }
 
     public List<StockReportDTO> getStockReport(Long branchId) {
-        List<Stock> stocks = branchId != null
-                ? stockRepository.findByBranchId(branchId)
-                : stockRepository.findAll();
+        return stockRepository.findByBranchId(branchId).stream()
+                .map(stock -> {
+                    StockReportDTO report = StockReportDTO.builder()
+                            .productId(stock.getProductId())
+                            .branchId(stock.getBranchId())
+                            .quantity(stock.getQuantity())
+                            .reservedQty(stock.getReservedQty())
+                            .availableQty(stock.getAvailableQty())
+                            .build();
 
-        List<StockReportDTO> reports = new ArrayList<>();
+                    productRepository.findById(stock.getProductId()).ifPresent(product -> {
+                        report.setProductName(product.getName());
+                        report.setProductSku(product.getSku());
+                        report.setReorderLevel(product.getReorderLevel());
+                        report.setIsLowStock(stock.getAvailableQty().compareTo(product.getReorderLevel()) <= 0);
+                        report.setIsOutOfStock(stock.getAvailableQty().compareTo(BigDecimal.ZERO) <= 0);
+                        report.setStockValue(stock.getQuantity().multiply(product.getCostPrice()));
+                    });
 
-        for (Stock stock : stocks) {
-            Product product = productRepository.findById(stock.getProductId()).orElse(null);
-            if (product == null) continue;
-
-            StockReportDTO report = new StockReportDTO();
-            report.setProductId(product.getProductId());
-            report.setSku(product.getSku());
-            report.setProductName(product.getName());
-            report.setTotalStock(stock.getQuantity());
-            report.setReservedQty(stock.getReservedQty());
-            report.setAvailableQty(stock.getAvailableQty());
-            report.setReorderLevel(product.getReorderLevel());
-
-            // Calculate stock value
-            report.setCostValue(product.getCostPrice().multiply(BigDecimal.valueOf(stock.getQuantity())));
-            report.setSellingValue(product.getSellingPrice().multiply(BigDecimal.valueOf(stock.getQuantity())));
-
-            // Determine stock status
-            if (stock.getQuantity() == 0) {
-                report.setStockStatus("OUT_OF_STOCK");
-            } else if (stock.getQuantity() <= product.getReorderLevel()) {
-                report.setStockStatus("LOW_STOCK");
-            } else if (product.getMaxStockLevel() > 0 && stock.getQuantity() > product.getMaxStockLevel()) {
-                report.setStockStatus("OVERSTOCKED");
-            } else {
-                report.setStockStatus("IN_STOCK");
-            }
-
-            reports.add(report);
-        }
-
-        return reports;
+                    return report;
+                })
+                .collect(Collectors.toList());
     }
 
     public List<LowStockAlertDTO> getLowStockAlerts(Long branchId) {
-        List<Stock> stocks = branchId != null
-                ? stockRepository.findByBranchId(branchId)
-                : stockRepository.findAll();
+        return stockRepository.findLowStockByBranch(branchId).stream()
+                .map(stock -> {
+                    LowStockAlertDTO alert = LowStockAlertDTO.builder()
+                            .productId(stock.getProductId())
+                            .branchId(stock.getBranchId())
+                            .currentQuantity(stock.getAvailableQty())
+                            .build();
 
-        List<LowStockAlertDTO> alerts = new ArrayList<>();
+                    productRepository.findById(stock.getProductId()).ifPresent(product -> {
+                        alert.setProductName(product.getName());
+                        alert.setProductSku(product.getSku());
+                        alert.setReorderLevel(product.getReorderLevel());
+                        alert.setShortage(product.getReorderLevel().subtract(stock.getAvailableQty()));
 
-        for (Stock stock : stocks) {
-            Product product = productRepository.findById(stock.getProductId()).orElse(null);
-            if (product == null) continue;
+                        if (stock.getAvailableQty().compareTo(BigDecimal.ZERO) <= 0) {
+                            alert.setAlertLevel("OUT_OF_STOCK");
+                        } else if (stock.getAvailableQty().compareTo(product.getReorderLevel().multiply(BigDecimal.valueOf(0.5))) <= 0) {
+                            alert.setAlertLevel("CRITICAL");
+                        } else {
+                            alert.setAlertLevel("LOW");
+                        }
+                    });
 
-            if (stock.getQuantity() <= product.getReorderLevel()) {
-                LowStockAlertDTO alert = new LowStockAlertDTO();
-                alert.setProductId(product.getProductId());
-                alert.setSku(product.getSku());
-                alert.setProductName(product.getName());
-                alert.setBranchId(stock.getBranchId());
-                alert.setCurrentStock(stock.getQuantity());
-                alert.setReorderLevel(product.getReorderLevel());
-                alert.setShortfall(product.getReorderLevel() - stock.getQuantity());
-
-                if (stock.getQuantity() == 0) {
-                    alert.setAlertLevel("CRITICAL");
-                    alert.setMessage("Out of stock");
-                } else {
-                    alert.setAlertLevel("WARNING");
-                    alert.setMessage("Low stock: below reorder level");
-                }
-
-                alerts.add(alert);
-            }
-        }
-
-        return alerts;
+                    return alert;
+                })
+                .collect(Collectors.toList());
     }
 
-    private void validateStockInput(Long branchId, Long productId, Integer quantity) {
-        if (branchId == null || productId == null) {
-            throw new IllegalArgumentException("branchId and productId are required");
-        }
-        if (quantity == null || quantity <= 0) {
-            throw new IllegalArgumentException("quantity must be greater than zero");
-        }
-    }
+    private StockDTO mapToDTO(Stock stock) {
+        StockDTO dto = StockDTO.builder()
+                .stockId(stock.getStockId())
+                .branchId(stock.getBranchId())
+                .productId(stock.getProductId())
+                .quantity(stock.getQuantity())
+                .reservedQty(stock.getReservedQty())
+                .availableQty(stock.getAvailableQty())
+                .lastUpdated(stock.getLastUpdated())
+                .build();
 
-    private Stock newStock(Long branchId, Long productId) {
-        Stock newStock = new Stock();
-        newStock.setBranchId(branchId);
-        newStock.setProductId(productId);
-        newStock.setQuantity(0);
-        newStock.setReservedQty(0);
-        return newStock;
-    }
-
-    private StockDTO convertToDTO(Stock stock) {
-        StockDTO dto = new StockDTO();
-        dto.setStockId(stock.getStockId());
-        dto.setBranchId(stock.getBranchId());
-        dto.setProductId(stock.getProductId());
-        dto.setQuantity(stock.getQuantity());
-        dto.setReservedQty(stock.getReservedQty());
-        dto.setAvailableQty(stock.getAvailableQty());
-        dto.setLastUpdated(stock.getLastUpdated());
-
-        // Set product details
+        // Fetch product details
         productRepository.findById(stock.getProductId()).ifPresent(product -> {
             dto.setProductName(product.getName());
             dto.setProductSku(product.getSku());
+            dto.setReorderLevel(product.getReorderLevel());
+            dto.setIsLowStock(stock.getAvailableQty().compareTo(product.getReorderLevel()) <= 0);
         });
 
         return dto;

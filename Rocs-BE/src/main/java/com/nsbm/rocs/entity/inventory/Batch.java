@@ -37,10 +37,10 @@ public class Batch {
     @Column(name = "expiry_date")
     private LocalDate expiryDate;
 
-    @Column(name = "qty")
-    private Integer qty = 0;
+    @Column(name = "qty", precision = 15, scale = 3)
+    private BigDecimal qty = BigDecimal.ZERO;
 
-    @Column(name = "cost_price", precision = 12, scale = 2)
+    @Column(name = "cost_price", precision = 15, scale = 2)
     private BigDecimal costPrice;
 
     @CreationTimestamp

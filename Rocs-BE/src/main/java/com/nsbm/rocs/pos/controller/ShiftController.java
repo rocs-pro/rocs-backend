@@ -12,6 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/pos")
+@CrossOrigin // Added to fix CORS issues
 public class ShiftController {
 
     @Autowired
@@ -24,32 +25,34 @@ public class ShiftController {
             return ResponseEntity.ok(Map.of("shiftId", shiftId, "status", "Shift opened successfully"));
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (RuntimeException e) {
+            // Catch RuntimeExceptions (like "Invalid supervisor credentials") as 400/401
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", "Internal Server Error: " + e.getMessage()));
         }
     }
 
-    // Support both singular and plural content structure if needed, or just specific mapping
     @GetMapping({"/shift/{shiftId}/totals", "/shifts/{shiftId}/totals"})
     public ResponseEntity<ApiResponse<Map<String, Object>>> getShiftTotals(@PathVariable Long shiftId) {
-        Map<String, Object> totals = shiftService.getShiftTotals(shiftId);
-        return ResponseEntity.ok(ApiResponse.success("Shift totals", totals));
+        try {
+            Map<String, Object> totals = shiftService.getShiftTotals(shiftId);
+            return ResponseEntity.ok(ApiResponse.success("Shift totals", totals));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
     }
 
     @PostMapping("/shift/close")
     public ResponseEntity<ApiResponse<String>> closeShift(@RequestBody CloseShiftRequest request) {
-        // Assume sending active cashier ID in request or via context.
-        // For security, get logged in user.
-        // But for this specific requirement, we might need shiftId explicitly if not inferred.
-        // Assuming current user's open shift.
-
-        Long cashierId = 1001L; // logged in user ID placeholder
+        // TODO: In production, extract this ID from the SecurityContext
+        Long cashierId = 1001L;
 
         try {
             shiftService.closeShift(cashierId, request);
             return ResponseEntity.ok(ApiResponse.success("Shift closed successfully", "Shift closed"));
         } catch (Exception e) {
-             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
-}
+}   

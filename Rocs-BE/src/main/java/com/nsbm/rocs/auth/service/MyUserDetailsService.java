@@ -5,6 +5,7 @@ import com.nsbm.rocs.entity.enums.AccountStatus;
 import com.nsbm.rocs.auth.repo.UserProfileRepo;
 import lombok.Data;
 import org.jspecify.annotations.NullMarked;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -25,8 +26,8 @@ public class MyUserDetailsService implements UserDetailsService {
         UserProfile existUser = userProfile.orElseThrow(() ->
                 new UsernameNotFoundException("User not found with username: " + username));
 
-        if (existUser.getAccountStatus() != AccountStatus.ACTIVE){
-            throw new RuntimeException("Account status not active");
+        if (existUser.getAccountStatus() != AccountStatus.ACTIVE) {
+            throw new DisabledException("Account is not active. Current status: " + existUser.getAccountStatus());
         }
         return existUser;
     }

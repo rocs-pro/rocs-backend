@@ -76,7 +76,28 @@ public class PosService {
         // Calculate totals
         BigDecimal grossTotal = BigDecimal.ZERO;
         for (SaleItemRequest itemReq : request.getItems()) {
-            BigDecimal lineTotal = itemReq.getUnitPrice().multiply(itemReq.getQuantity());
+            BigDecimal unitPrice = itemReq.getUnitPrice();
+            BigDecimal quantity = itemReq.getQuantity();
+
+            // Handle null values - fetch from product if needed
+            if (unitPrice == null || quantity == null) {
+                Product product = productRepository.findById(itemReq.getProductId()).orElse(null);
+                if (product != null) {
+                    if (unitPrice == null) {
+                        unitPrice = product.getSellingPrice() != null ? product.getSellingPrice() : BigDecimal.ZERO;
+                    }
+                    if (quantity == null) {
+                        quantity = BigDecimal.ONE;
+                    }
+                } else {
+                    unitPrice = unitPrice != null ? unitPrice : BigDecimal.ZERO;
+                    quantity = quantity != null ? quantity : BigDecimal.ONE;
+                }
+            }
+
+            BigDecimal lineTotal = unitPrice.multiply(quantity);
+            BigDecimal itemDiscount = itemReq.getDiscount() != null ? itemReq.getDiscount() : BigDecimal.ZERO;
+            lineTotal = lineTotal.subtract(itemDiscount);
             grossTotal = grossTotal.add(lineTotal);
         }
         sale.setGrossTotal(grossTotal);
@@ -87,7 +108,8 @@ public class PosService {
         BigDecimal paidAmount = BigDecimal.ZERO;
         if (request.getPayments() != null) {
             for(PaymentRequest pr : request.getPayments()) {
-                paidAmount = paidAmount.add(pr.getAmount());
+                BigDecimal amount = pr.getAmount() != null ? pr.getAmount() : BigDecimal.ZERO;
+                paidAmount = paidAmount.add(amount);
             }
         }
         sale.setPaidAmount(paidAmount);
@@ -106,14 +128,27 @@ public class PosService {
         // 2. Save Items
         List<SaleItem> saleItems = new ArrayList<>();
         for (SaleItemRequest itemReq : request.getItems()) {
+            BigDecimal unitPrice = itemReq.getUnitPrice();
+            BigDecimal quantity = itemReq.getQuantity();
+
+            // Handle null values - fetch from product if needed
+            if (unitPrice == null) {
+                Product product = productRepository.findById(itemReq.getProductId()).orElse(null);
+                unitPrice = (product != null && product.getSellingPrice() != null)
+                    ? product.getSellingPrice() : BigDecimal.ZERO;
+            }
+            if (quantity == null) {
+                quantity = BigDecimal.ONE;
+            }
+
             SaleItem item = new SaleItem();
             item.setSaleId(saleId);
             item.setProductId(itemReq.getProductId());
             item.setSerialId(itemReq.getSerialId());
-            item.setQty(itemReq.getQuantity());
-            item.setUnitPrice(itemReq.getUnitPrice());
-            item.setDiscount(itemReq.getDiscount());
-            item.setTotal(itemReq.getUnitPrice().multiply(itemReq.getQuantity()));
+            item.setQty(quantity);
+            item.setUnitPrice(unitPrice);
+            item.setDiscount(itemReq.getDiscount() != null ? itemReq.getDiscount() : BigDecimal.ZERO);
+            item.setTotal(unitPrice.multiply(quantity));
             // item.setTaxRate(...);
 
             saleItemRepository.save(item);
@@ -126,8 +161,8 @@ public class PosService {
             for(PaymentRequest pr : request.getPayments()) {
                 Payment payment = new Payment();
                 payment.setSaleId(saleId);
-                payment.setPaymentType(pr.getPaymentType());
-                payment.setAmount(pr.getAmount());
+                payment.setPaymentType(pr.getPaymentType() != null ? pr.getPaymentType() : "CASH");
+                payment.setAmount(pr.getAmount() != null ? pr.getAmount() : BigDecimal.ZERO);
                 payment.setReferenceNo(pr.getReferenceNo());
                 payment.setCardLast4(pr.getCardLast4());
                 payment.setBankName(pr.getBankName());
@@ -140,8 +175,59 @@ public class PosService {
         return mapToResponse(sale, saleItems, payments);
     }
 
+    /**
+     * Get the last invoice number for today
+     * @return Last invoice info with number and next sequence
+     */
+    public Map<String, Object> getLastInvoiceInfo() {
+        String today = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String datePrefix = "INV-" + today;
+
+        String lastInvoice = saleRepository.findLastInvoiceNoByDatePrefix(datePrefix);
+
+        int nextSequence = 1;
+        if (lastInvoice != null && lastInvoice.startsWith(datePrefix)) {
+            try {
+                // Extract the sequence number from INV-YYYYMMDD-XXXXX
+                String[] parts = lastInvoice.split("-");
+                if (parts.length >= 3) {
+                    nextSequence = Integer.parseInt(parts[2]) + 1;
+                }
+            } catch (NumberFormatException e) {
+                nextSequence = 1;
+            }
+        }
+
+        String nextInvoiceNo = String.format("%s-%05d", datePrefix, nextSequence);
+
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("lastInvoiceNo", lastInvoice);
+        result.put("nextInvoiceNo", nextInvoiceNo);
+        result.put("nextSequence", nextSequence);
+        result.put("date", today);
+
+        return result;
+    }
+
     private String generateInvoiceNo() {
-        return "INV-" + System.currentTimeMillis();
+        String today = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String datePrefix = "INV-" + today;
+
+        String lastInvoice = saleRepository.findLastInvoiceNoByDatePrefix(datePrefix);
+
+        int nextSequence = 1;
+        if (lastInvoice != null && lastInvoice.startsWith(datePrefix)) {
+            try {
+                String[] parts = lastInvoice.split("-");
+                if (parts.length >= 3) {
+                    nextSequence = Integer.parseInt(parts[2]) + 1;
+                }
+            } catch (NumberFormatException e) {
+                nextSequence = 1;
+            }
+        }
+
+        return String.format("%s-%05d", datePrefix, nextSequence);
     }
 
     private SaleResponse mapToResponse(Sale sale, List<SaleItem> items, List<Payment> payments) {

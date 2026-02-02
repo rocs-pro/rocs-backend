@@ -1,38 +1,35 @@
 package com.nsbm.rocs.inventory.dto;
 
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import jakarta.validation.constraints.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class StockDTO {
-
     private Long stockId;
-
-    @NotNull(message = "Branch ID is required")
     private Long branchId;
-
-    @NotNull(message = "Product ID is required")
+    private String branchName;
     private Long productId;
-
-    @Min(value = 0, message = "Quantity must be positive")
-    private Integer quantity = 0;
-
-    @Min(value = 0, message = "Reserved quantity must be positive")
-    private Integer reservedQty = 0;
-
-    private Integer availableQty;
-
-    private LocalDateTime lastUpdated;
-
-    // Display fields
     private String productName;
     private String productSku;
-    private String branchName;
+
+    @Min(value = 0, message = "Quantity must be positive")
+    private BigDecimal quantity;
+
+    @Min(value = 0, message = "Reserved quantity must be positive")
+    private BigDecimal reservedQty;
+
+    private BigDecimal availableQty;
+    private BigDecimal reorderLevel;
+    private Boolean isLowStock;
+    private LocalDateTime lastUpdated;
 }
 

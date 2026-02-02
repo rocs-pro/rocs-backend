@@ -46,20 +46,20 @@ public class Product {
     @Column(name = "unit_id")
     private Long unitId;
 
-    @Column(name = "cost_price", precision = 12, scale = 2)
+    @Column(name = "cost_price", precision = 15, scale = 2)
     private BigDecimal costPrice = BigDecimal.ZERO;
 
-    @Column(name = "selling_price", precision = 12, scale = 2)
+    @Column(name = "selling_price", precision = 15, scale = 2)
     private BigDecimal sellingPrice = BigDecimal.ZERO;
 
-    @Column(name = "mrp", precision = 12, scale = 2)
+    @Column(name = "mrp", precision = 15, scale = 2)
     private BigDecimal mrp = BigDecimal.ZERO;
 
-    @Column(name = "reorder_level")
-    private Integer reorderLevel = 0;
+    @Column(name = "reorder_level", precision = 15, scale = 3)
+    private BigDecimal reorderLevel = BigDecimal.ZERO;
 
-    @Column(name = "max_stock_level")
-    private Integer maxStockLevel = 0;
+    @Column(name = "max_stock_level", precision = 15, scale = 3)
+    private BigDecimal maxStockLevel = BigDecimal.ZERO;
 
     @Column(name = "is_serialized")
     private Boolean isSerialized = false;

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity(name = "InventoryStock")
@@ -28,14 +29,14 @@ public class Stock {
     @Column(name = "product_id", nullable = false)
     private Long productId;
 
-    @Column(name = "quantity")
-    private Integer quantity = 0;
+    @Column(name = "quantity", precision = 15, scale = 3)
+    private BigDecimal quantity = BigDecimal.ZERO;
 
-    @Column(name = "reserved_qty")
-    private Integer reservedQty = 0;
+    @Column(name = "reserved_qty", precision = 15, scale = 3)
+    private BigDecimal reservedQty = BigDecimal.ZERO;
 
-    @Column(name = "available_qty", insertable = false, updatable = false)
-    private Integer availableQty;
+    @Column(name = "available_qty", precision = 15, scale = 3)
+    private BigDecimal availableQty = BigDecimal.ZERO;
 
     @UpdateTimestamp
     @Column(name = "last_updated")

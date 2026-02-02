@@ -1,12 +1,15 @@
 package com.nsbm.rocs.inventory.dto;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import jakarta.validation.constraints.*;
+import java.math.BigDecimal;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class StockAdjustmentDTO {
@@ -17,16 +20,13 @@ public class StockAdjustmentDTO {
     @NotNull(message = "Product ID is required")
     private Long productId;
 
-    @NotNull(message = "Adjustment quantity is required")
-    private Integer adjustmentQty; // Can be positive or negative
+    @NotNull(message = "Quantity is required")
+    private BigDecimal quantity;
 
-    @NotBlank(message = "Adjustment type is required")
-    @Pattern(regexp = "ADD|REMOVE|DAMAGE|LOSS|RETURN|CORRECTION", message = "Invalid adjustment type")
-    private String adjustmentType;
+    @NotNull(message = "Adjustment type is required")
+    private String adjustmentType; // ADD, SUBTRACT, SET
 
-    @Size(max = 500, message = "Reason must not exceed 500 characters")
     private String reason;
-
-    private String batchCode;
+    private Long adjustedBy;
 }
 

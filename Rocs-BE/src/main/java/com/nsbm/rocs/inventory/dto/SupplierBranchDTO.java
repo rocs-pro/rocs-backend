@@ -1,22 +1,22 @@
 package com.nsbm.rocs.inventory.dto;
 
-import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
-@Getter
-@Setter
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SupplierBranchDTO {
-
-    @NotNull(message = "Branch id is required")
+    private Long supplierId;
     private Long branchId;
-
-    private Boolean isPreferred = false;
-
+    private String branchName;
+    private Boolean isPreferred;
     private BigDecimal discountPercentage;
-
     private String notes;
 }
 

@@ -1,5 +1,6 @@
 package com.nsbm.rocs.pos.controller;
 
+import com.nsbm.rocs.entity.main.UserProfile;
 import com.nsbm.rocs.pos.dto.sale.CreateSaleRequest;
 import com.nsbm.rocs.pos.dto.sale.SaleResponse;
 import com.nsbm.rocs.pos.dto.sale.SaleSummaryDTO;
@@ -8,9 +9,12 @@ import com.nsbm.rocs.common.response.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/pos")
@@ -26,27 +30,57 @@ public class PosController {
         this.shiftService = shiftService;
     }
 
-    @PostMapping("/orders")
-    public ResponseEntity<ApiResponse<SaleResponse>> submitOrder(@RequestBody CreateSaleRequest request) {
-        // TODO: Get real IDs from SecurityContext
-        Long branchId = 1L;
-        Long cashierId = 1001L; // logged in user
-
-        Long shiftId;
-        try {
-            shiftId = shiftService.getActiveShiftId(cashierId);
-        } catch (IllegalStateException e) {
-            return new ResponseEntity<>(ApiResponse.error(e.getMessage()), HttpStatus.BAD_REQUEST);
+    private Long getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof UserProfile) {
+            return ((UserProfile) auth.getPrincipal()).getUserId();
         }
-
-        SaleResponse response = posService.createSale(request, branchId, cashierId, shiftId);
-        return new ResponseEntity<>(
-                ApiResponse.success("Order created successfully", response),
-                HttpStatus.CREATED
-        );
+        throw new RuntimeException("User not authenticated");
     }
 
-    @GetMapping("/orders")
+    private Long getCurrentUserBranchId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof UserProfile) {
+            UserProfile user = (UserProfile) auth.getPrincipal();
+            return user.getBranch() != null ? user.getBranch().getBranchId() : 1L;
+        }
+        return 1L; // Default branch
+    }
+
+    @GetMapping({"/sales/last-invoice", "/orders/last-invoice"})
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getLastInvoice() {
+        try {
+            Map<String, Object> invoiceInfo = posService.getLastInvoiceInfo();
+            return ResponseEntity.ok(ApiResponse.success("Invoice info fetched", invoiceInfo));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PostMapping({"/orders", "/sales"})
+    public ResponseEntity<ApiResponse<SaleResponse>> submitOrder(@RequestBody CreateSaleRequest request) {
+        try {
+            Long cashierId = getCurrentUserId();
+            Long branchId = getCurrentUserBranchId();
+
+            Long shiftId;
+            try {
+                shiftId = shiftService.getActiveShiftId(cashierId);
+            } catch (IllegalStateException e) {
+                return new ResponseEntity<>(ApiResponse.error(e.getMessage()), HttpStatus.BAD_REQUEST);
+            }
+
+            SaleResponse response = posService.createSale(request, branchId, cashierId, shiftId);
+            return new ResponseEntity<>(
+                    ApiResponse.success("Order created successfully", response),
+                    HttpStatus.CREATED
+            );
+        } catch (Exception e) {
+            return new ResponseEntity<>(ApiResponse.error(e.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @GetMapping({"/orders", "/sales"})
     public ResponseEntity<ApiResponse<List<SaleSummaryDTO>>> getBills(@RequestParam(required = false) String status) {
         List<SaleSummaryDTO> response = posService.getSaleSummaries(status);
         return new ResponseEntity<>(
@@ -55,7 +89,7 @@ public class PosController {
         );
     }
 
-    @GetMapping("/orders/{id}")
+    @GetMapping({"/orders/{id}", "/sales/{id}"})
     public ResponseEntity<ApiResponse<SaleResponse>> getBillById(@PathVariable Long id) {
         SaleResponse response = posService.getSaleById(id);
         return new ResponseEntity<>(

@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -54,7 +55,7 @@ public class BatchService {
     public BatchDTO getBatchByCode(Long branchId, Long productId, String batchCode) {
         List<Batch> candidates = batchRepository.findAllByBranchIdAndProductIdAndBatchCodeOrdered(branchId, productId, batchCode);
         Batch batch = candidates.stream()
-                .filter(b -> b.getQty() != null && b.getQty() > 0)
+                .filter(b -> b.getQty() != null && b.getQty().compareTo(BigDecimal.ZERO) > 0)
                 .min(Comparator.comparing((Batch b) -> b.getExpiryDate() == null)
                         .thenComparing(Batch::getExpiryDate, Comparator.nullsLast(Comparator.naturalOrder()))
                         .thenComparing(Batch::getManufacturingDate, Comparator.nullsLast(Comparator.naturalOrder()))
@@ -117,7 +118,7 @@ public class BatchService {
         List<ExpiryAlertDTO> alerts = new ArrayList<>();
 
         for (Batch batch : batches) {
-            if (batch.getExpiryDate() == null || batch.getQty() == null || batch.getQty() <= 0) {
+            if (batch.getExpiryDate() == null || batch.getQty() == null || batch.getQty().compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
 
@@ -168,20 +169,20 @@ public class BatchService {
             throw new InsufficientStockException("Not enough batch quantity to deduct " + qtyToDeduct);
         }
 
-        int remaining = qtyToDeduct;
+        BigDecimal remaining = BigDecimal.valueOf(qtyToDeduct);
         List<Batch> toUpdate = new ArrayList<>();
 
         for (Batch batch : batches) {
-            if (remaining <= 0) break;
-            int take = Math.min(batch.getQty(), remaining);
-            if (take > 0) {
-                batch.setQty(batch.getQty() - take);
-                remaining -= take;
+            if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
+            BigDecimal take = batch.getQty().min(remaining);
+            if (take.compareTo(BigDecimal.ZERO) > 0) {
+                batch.setQty(batch.getQty().subtract(take));
+                remaining = remaining.subtract(take);
                 toUpdate.add(batch);
             }
         }
 
-        if (remaining > 0) {
+        if (remaining.compareTo(BigDecimal.ZERO) > 0) {
             throw new InsufficientStockException("Not enough batch quantity to deduct " + qtyToDeduct);
         }
 

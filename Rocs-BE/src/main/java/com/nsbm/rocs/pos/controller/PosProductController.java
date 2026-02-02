@@ -87,12 +87,14 @@ public class PosProductController {
     }
 
     private PosProductDTO mapToDTO(Product product) {
-        return new PosProductDTO(
-            product.getProductId(),
-            product.getName(),
-            product.getSellingPrice(),
-            product.getSku(),
-            product.getBarcode()
-        );
+        PosProductDTO dto = new PosProductDTO();
+        dto.setProductId(product.getProductId());
+        dto.setName(product.getName());
+        dto.setSellingPrice(product.getSellingPrice());
+        dto.setSku(product.getSku());
+        dto.setBarcode(product.getBarcode());
+        dto.setTaxRate(product.getTaxRate());
+        dto.setIsSerialized(product.getIsSerialized());
+        return dto;
     }
 }

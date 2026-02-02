@@ -1,24 +1,25 @@
 package com.nsbm.rocs.inventory.dto;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class LowStockAlertDTO {
-
     private Long productId;
-    private String sku;
     private String productName;
-    private String categoryName;
-    private String brandName;
+    private String productSku;
     private Long branchId;
     private String branchName;
-    private Integer currentStock;
-    private Integer reorderLevel;
-    private Integer shortfall;
-    private String alertLevel; // CRITICAL, WARNING
-    private String message;
+    private BigDecimal currentQuantity;
+    private BigDecimal reorderLevel;
+    private BigDecimal shortage;
+    private String alertLevel; // LOW, CRITICAL, OUT_OF_STOCK
 }
+

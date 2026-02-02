@@ -74,4 +74,17 @@ public interface SaleRepository {
      * @return Total net sales
      */
     BigDecimal sumNetTotalByShiftId(Long shiftId);
+
+    /**
+     * Get the last invoice number
+     * @return Last invoice number or null if none exists
+     */
+    String findLastInvoiceNo();
+
+    /**
+     * Get the last invoice number for today
+     * @param datePrefix - Date prefix in format INV-YYYYMMDD
+     * @return Last invoice number for today or null if none exists
+     */
+    String findLastInvoiceNoByDatePrefix(String datePrefix);
 }

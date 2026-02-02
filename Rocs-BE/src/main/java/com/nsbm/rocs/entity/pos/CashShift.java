@@ -1,45 +1,94 @@
 package com.nsbm.rocs.entity.pos;
 
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-
+@Entity
+@Table(name = "cash_shifts")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class CashShift {
 
-    // Primary Key
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "shift_id")
     private Long shiftId;
 
+    @Column(name = "shift_no", unique = true, length = 50)
     private String shiftNo;
 
-    // Foreign Keys
+    @Column(name = "branch_id", nullable = false)
     private Long branchId;
+
+    @Column(name = "terminal_id", nullable = false)
     private Long terminalId;
+
+    @Column(name = "cashier_id", nullable = false)
     private Long cashierId;
 
-    // Timestamps
+    @Column(name = "opened_at", nullable = false)
     private LocalDateTime openedAt;
+
+    @Column(name = "closed_at")
     private LocalDateTime closedAt;
 
-    // Money fields
-    private BigDecimal openingCash;
-    private BigDecimal closingCash;
-    private BigDecimal expectedCash;
-    private BigDecimal cashDifference;
-    private BigDecimal totalSales;
-    private BigDecimal totalReturns;
+    @Column(name = "opening_cash", precision = 15, scale = 2)
+    private BigDecimal openingCash = BigDecimal.ZERO;
 
+    @Column(name = "closing_cash", precision = 15, scale = 2)
+    private BigDecimal closingCash = BigDecimal.ZERO;
+
+    @Column(name = "expected_cash", precision = 15, scale = 2)
+    private BigDecimal expectedCash = BigDecimal.ZERO;
+
+    @Column(name = "cash_difference", precision = 15, scale = 2)
+    private BigDecimal cashDifference = BigDecimal.ZERO;
+
+    @Column(name = "total_sales", precision = 15, scale = 2)
+    private BigDecimal totalSales = BigDecimal.ZERO;
+
+    @Column(name = "total_returns", precision = 15, scale = 2)
+    private BigDecimal totalReturns = BigDecimal.ZERO;
+
+    @Column(name = "approved_by")
     private Long approvedBy;
+
+    @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
-    // Status and notes
-    private String status; // OPEN, CLOSED
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private ShiftStatus status = ShiftStatus.OPEN;
+
+    @Column(columnDefinition = "TEXT")
     private String notes;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        if (openedAt == null) openedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    public enum ShiftStatus {
+        OPEN, CLOSED, SUSPENDED
+    }
 
     @Override
     public String toString() {
@@ -53,9 +102,8 @@ public class CashShift {
                 ", closedAt=" + closedAt +
                 ", openingCash=" + openingCash +
                 ", closingCash=" + closingCash +
-                ", status='" + status + '\'' +
+                ", status=" + status +
                 '}';
     }
-
 
 }

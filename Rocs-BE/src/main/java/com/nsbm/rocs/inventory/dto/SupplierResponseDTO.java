@@ -1,17 +1,19 @@
 package com.nsbm.rocs.inventory.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
-@Getter
-@Setter
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SupplierResponseDTO {
-
     private Long supplierId;
     private String code;
     private String name;
@@ -29,11 +31,11 @@ public class SupplierResponseDTO {
     private Integer creditDays;
     private BigDecimal creditLimit;
     private Boolean isActive;
-    private Long createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Long createdBy;
 
-    private List<SupplierContactDTO> contacts = new ArrayList<>();
-    private List<SupplierBranchDTO> branches = new ArrayList<>();
+    private List<SupplierContactDTO> contacts;
+    private List<SupplierBranchDTO> branches;
 }
 

@@ -162,4 +162,24 @@ public class SaleRepositoryImpl implements SaleRepository {
         java.math.BigDecimal sum = jdbcTemplate.queryForObject(sql, java.math.BigDecimal.class, shiftId);
         return sum != null ? sum : java.math.BigDecimal.ZERO;
     }
+
+    @Override
+    public String findLastInvoiceNo() {
+        try {
+            String sql = "SELECT invoice_no FROM sales ORDER BY sale_id DESC LIMIT 1";
+            return jdbcTemplate.queryForObject(sql, String.class);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public String findLastInvoiceNoByDatePrefix(String datePrefix) {
+        try {
+            String sql = "SELECT invoice_no FROM sales WHERE invoice_no LIKE ? ORDER BY invoice_no DESC LIMIT 1";
+            return jdbcTemplate.queryForObject(sql, String.class, datePrefix + "%");
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
 }

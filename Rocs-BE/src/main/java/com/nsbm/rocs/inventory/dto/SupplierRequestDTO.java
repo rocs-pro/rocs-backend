@@ -1,25 +1,24 @@
 package com.nsbm.rocs.inventory.dto;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 
-@Getter
-@Setter
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SupplierRequestDTO {
 
-    @NotBlank(message = "Supplier code is required")
-    @Size(max = 60, message = "Supplier code must not exceed 60 characters")
+    @NotBlank(message = "Code is required")
     private String code;
 
-    @NotBlank(message = "Supplier name is required")
-    @Size(max = 150, message = "Supplier name must not exceed 150 characters")
+    @NotBlank(message = "Name is required")
     private String name;
 
     private String companyName;
@@ -35,13 +34,10 @@ public class SupplierRequestDTO {
     private String taxId;
     private Integer creditDays;
     private BigDecimal creditLimit;
-    private Boolean isActive = true;
+    private Boolean isActive;
     private Long createdBy;
 
-    @Valid
-    private List<SupplierContactDTO> contacts = new ArrayList<>();
-
-    @Valid
-    private List<SupplierBranchDTO> branches = new ArrayList<>();
+    private List<SupplierContactDTO> contacts;
+    private List<SupplierBranchDTO> branches;
 }
 

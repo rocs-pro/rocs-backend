@@ -2,16 +2,12 @@ package com.nsbm.rocs.pos.service;
 
 import com.nsbm.rocs.auth.repo.UserProfileRepo;
 import com.nsbm.rocs.entity.main.UserProfile;
+import com.nsbm.rocs.entity.pos.CashFlow;
 import com.nsbm.rocs.entity.pos.CashShift;
-import com.nsbm.rocs.pos.dto.ShiftStartRequest;
 import com.nsbm.rocs.pos.dto.CashFlowRequest;
+import com.nsbm.rocs.pos.dto.ShiftStartRequest;
 import com.nsbm.rocs.pos.dto.shift.CloseShiftRequest;
 import com.nsbm.rocs.pos.repository.ShiftRepository;
-import com.nsbm.rocs.pos.repository.SaleRepository;
-import com.nsbm.rocs.pos.repository.CashFlowRepository;
-import com.nsbm.rocs.pos.repository.PaymentRepository;
-import com.nsbm.rocs.entity.pos.CashFlow;
-import com.nsbm.rocs.entity.pos.Payment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,10 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class ShiftService {
@@ -32,63 +27,77 @@ public class ShiftService {
     private final ShiftRepository shiftRepository;
     private final AuthenticationManager authenticationManager;
     private final UserProfileRepo userProfileRepo;
-    private final SaleRepository saleRepository;
-    private final CashFlowRepository cashFlowRepository;
-    private final PaymentRepository paymentRepository;
 
     @Autowired
-    public ShiftService(ShiftRepository shiftRepository,
-                        AuthenticationManager authenticationManager,
-                        UserProfileRepo userProfileRepo,
-                        SaleRepository saleRepository,
-                        CashFlowRepository cashFlowRepository,
-                        PaymentRepository paymentRepository) {
+    public ShiftService(ShiftRepository shiftRepository, AuthenticationManager authenticationManager, UserProfileRepo userProfileRepo) {
         this.shiftRepository = shiftRepository;
         this.authenticationManager = authenticationManager;
         this.userProfileRepo = userProfileRepo;
-        this.saleRepository = saleRepository;
-        this.cashFlowRepository = cashFlowRepository;
-        this.paymentRepository = paymentRepository;
     }
 
+    // --- 1. START SHIFT ---
     @Transactional
     public Long startShift(ShiftStartRequest request) {
         Long supervisorId = null;
         LocalDateTime approvedAt = null;
 
-        // 1. Validate Supervisor Credentials (if required)
+        // Validate Supervisor Credentials if provided
         if (request.getSupervisor() != null &&
-            request.getSupervisor().getUsername() != null &&
-            !request.getSupervisor().getUsername().isEmpty()) {
+                request.getSupervisor().getUsername() != null &&
+                !request.getSupervisor().getUsername().isEmpty()) {
+
+            String username = request.getSupervisor().getUsername();
+            String password = request.getSupervisor().getPassword();
+
+            if (password == null || password.isEmpty()) {
+                throw new RuntimeException("Supervisor password is required");
+            }
 
             try {
+                // First check if user exists
+                UserProfile supervisor = userProfileRepo.findByUsername(username)
+                        .orElseThrow(() -> new RuntimeException("Supervisor user not found: " + username));
+
+                // Check if account is active
+                if (supervisor.getAccountStatus() != com.nsbm.rocs.entity.enums.AccountStatus.ACTIVE) {
+                    throw new RuntimeException("Supervisor account is not active. Current status: " + supervisor.getAccountStatus());
+                }
+
+                // Authenticate using Spring Security
                 Authentication auth = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                        request.getSupervisor().getUsername(),
-                        request.getSupervisor().getPassword()
-                    )
+                        new UsernamePasswordAuthenticationToken(username, password)
                 );
 
-                if (!auth.isAuthenticated()) {
+                if (auth == null || !auth.isAuthenticated()) {
                     throw new RuntimeException("Invalid supervisor credentials");
                 }
 
-                // Get supervisor ID
-                UserProfile supervisor = userProfileRepo.findByUsername(request.getSupervisor().getUsername())
-                        .orElseThrow(() -> new RuntimeException("Supervisor user not found"));
-
-                // Optional: Check if user has supervisor role
-                // if (!supervisor.getRole().getName().equals("SUPERVISOR")) ...
+                // Check role - allow ADMIN, BRANCH_MANAGER, or SUPERVISOR
+                String role = supervisor.getRole() != null ? supervisor.getRole().name().toUpperCase() : "";
+                if (!List.of("ADMIN", "BRANCH_MANAGER", "SUPERVISOR", "MANAGER").contains(role)) {
+                    throw new RuntimeException("Access Denied: User " + supervisor.getUsername() + " is a " + role + " and cannot approve shifts.");
+                }
 
                 supervisorId = supervisor.getUserId();
                 approvedAt = LocalDateTime.now();
 
+            } catch (org.springframework.security.authentication.DisabledException e) {
+                throw new RuntimeException("Supervisor account is disabled or not active");
+            } catch (org.springframework.security.authentication.BadCredentialsException e) {
+                throw new RuntimeException("Invalid supervisor password");
+            } catch (org.springframework.security.core.AuthenticationException e) {
+                throw new RuntimeException("Authentication Failed: " + e.getMessage());
+            } catch (RuntimeException e) {
+                throw e; // Re-throw our custom exceptions
             } catch (Exception e) {
-                throw new RuntimeException("Supervisor authentication failed: " + e.getMessage());
+                throw new RuntimeException("Approval Failed: " + e.getMessage());
             }
         }
 
-        // 2. Create CashShift Entity
+        if (shiftRepository.hasOpenShift(request.getCashierId())) {
+            throw new IllegalStateException("Cashier already has an active shift.");
+        }
+
         CashShift shift = new CashShift();
         shift.setShiftNo(generateShiftNo(request.getBranchId()));
         shift.setBranchId(request.getBranchId());
@@ -96,141 +105,75 @@ public class ShiftService {
         shift.setCashierId(request.getCashierId());
         shift.setOpeningCash(request.getOpeningCash());
         shift.setOpenedAt(LocalDateTime.now());
-        shift.setStatus("OPEN");
+        // Ensure you are using the String value if ShiftStatus is not imported, or CashShift.ShiftStatus.OPEN
+        shift.setStatus(CashShift.ShiftStatus.valueOf("OPEN"));
         shift.setApprovedBy(supervisorId);
         shift.setApprovedAt(approvedAt);
 
-        // 3. Save to database
+        // Initialize totals
+        shift.setTotalSales(BigDecimal.ZERO);
+        shift.setTotalReturns(BigDecimal.ZERO);
+        shift.setClosingCash(BigDecimal.ZERO);
+        shift.setExpectedCash(request.getOpeningCash());
+        shift.setCashDifference(BigDecimal.ZERO);
+
         return shiftRepository.save(shift);
     }
 
-    private String generateShiftNo(Long branchId) {
-        return "SH-" + branchId + "-" + System.currentTimeMillis();
+    // --- 2. GET ACTIVE SHIFT ID ---
+    public Long getActiveShiftId(Long cashierId) {
+        return shiftRepository.findOpenShiftByCashierId(cashierId)
+                .map(CashShift::getShiftId)
+                .orElseThrow(() -> new IllegalStateException("No active shift found for this cashier. Please open a shift."));
     }
 
+    // --- 3. GET SHIFT TOTALS ---
     public Map<String, Object> getShiftTotals(Long shiftId) {
-        BigDecimal totalSales = saleRepository.sumNetTotalByShiftId(shiftId);
-        List<CashFlow> flows = cashFlowRepository.findByShiftId(shiftId);
-        BigDecimal paidIn = flows.stream().filter(f -> "PAID_IN".equals(f.getType())).map(CashFlow::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal paidOut = flows.stream().filter(f -> "PAID_OUT".equals(f.getType())).map(CashFlow::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        CashShift shift = shiftRepository.findByIdWithStats(shiftId)
+                .orElseThrow(() -> new RuntimeException("Shift not found: " + shiftId));
 
-        Optional<CashShift> shift = shiftRepository.findById(shiftId);
-        BigDecimal openingCash = shift.map(CashShift::getOpeningCash).orElse(BigDecimal.ZERO);
+        Map<String, Object> totals = new HashMap<>();
+        totals.put("shiftId", shift.getShiftId());
+        totals.put("openingCash", shift.getOpeningCash());
+        totals.put("totalSales", shift.getTotalSales());
+        totals.put("totalReturns", shift.getTotalReturns());
 
-        // Detailed breakdown
-        List<Payment> payments = paymentRepository.findByShiftId(shiftId);
+        BigDecimal expected = shift.getOpeningCash()
+                .add(shift.getTotalSales() != null ? shift.getTotalSales() : BigDecimal.ZERO)
+                .subtract(shift.getTotalReturns() != null ? shift.getTotalReturns() : BigDecimal.ZERO);
 
-        BigDecimal cashSales = payments.stream()
-                .filter(p -> "CASH".equalsIgnoreCase(p.getPaymentType()))
-                .map(Payment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal cardTotal = payments.stream()
-                .filter(p -> "CARD".equalsIgnoreCase(p.getPaymentType()))
-                .map(Payment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        long cardCount = payments.stream()
-                 .filter(p -> "CARD".equalsIgnoreCase(p.getPaymentType()))
-                 .count();
-
-        // QR Support
-        BigDecimal qrTotal = payments.stream()
-                .filter(p -> "QR".equalsIgnoreCase(p.getPaymentType()))
-                .map(Payment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        Map<String, BigDecimal> bankBreakdown = payments.stream()
-                .filter(p -> "CARD".equalsIgnoreCase(p.getPaymentType()))
-                .collect(Collectors.groupingBy(
-                        p -> p.getBankName() != null ? p.getBankName() : "Unknown",
-                        Collectors.reducing(BigDecimal.ZERO, Payment::getAmount, BigDecimal::add)
-                ));
-
-        BigDecimal expectedCash = openingCash.add(cashSales).add(paidIn).subtract(paidOut);
-
-        return Map.of(
-            "totalSales", totalSales,
-            "cashSales", cashSales,
-            "qrTotal", qrTotal,
-            "paidIn", paidIn,
-            "paidOut", paidOut,
-            "openingFloat", openingCash,
-            "expectedCash", expectedCash,
-            "cardTotal", cardTotal,
-            "cardCount", cardCount,
-            "bankBreakdown", bankBreakdown
-        );
+        totals.put("expectedCash", expected);
+        return totals;
     }
 
+    // --- 4. CLOSE SHIFT ---
     @Transactional
     public void closeShift(Long cashierId, CloseShiftRequest request) {
-        // 1. Supervisor Validation
-        if (request.getSupervisorUsername() == null || request.getSupervisorPassword() == null) {
-            throw new IllegalArgumentException("Supervisor credentials required");
-        }
+        CashShift shift = shiftRepository.findOpenShiftByCashierId(cashierId)
+                .orElseThrow(() -> new IllegalStateException("No open shift found for this cashier"));
 
-        Character loginResult = validateSupervisor(request.getSupervisorUsername(), request.getSupervisorPassword());
-        if(loginResult == null) {
-             throw new IllegalArgumentException("Invalid supervisor credentials");
-        }
+        shift = shiftRepository.findByIdWithStats(shift.getShiftId()).orElse(shift);
 
-        // 2. Find Active Shift
-        CashShift shift = shiftRepository.findActiveShiftByCashier(cashierId)
-                .orElseThrow(() -> new IllegalStateException("No active shift found for cashier"));
+        BigDecimal totalSales = shift.getTotalSales() != null ? shift.getTotalSales() : BigDecimal.ZERO;
+        BigDecimal totalReturns = shift.getTotalReturns() != null ? shift.getTotalReturns() : BigDecimal.ZERO;
+        BigDecimal expected = shift.getOpeningCash().add(totalSales).subtract(totalReturns);
 
-        // 3. Calculate Totals
-        Map<String, Object> totals = getShiftTotals(shift.getShiftId());
-        BigDecimal expectedCash = (BigDecimal) totals.get("expectedCash");
-        BigDecimal totalSales = (BigDecimal) totals.get("totalSales");
-        // BigDecimal totalReturns = ...;
-
-        // 4. Update Shift
-        shift.setClosedAt(LocalDateTime.now());
         shift.setClosingCash(request.getClosingCash());
-        shift.setExpectedCash(expectedCash);
-        shift.setCashDifference(request.getClosingCash().subtract(expectedCash));
-        shift.setTotalSales(totalSales);
-        shift.setStatus("CLOSED");
+        shift.setExpectedCash(expected);
+        shift.setCashDifference(request.getClosingCash().subtract(expected));
+        shift.setClosedAt(LocalDateTime.now());
+        shift.setStatus(CashShift.ShiftStatus.valueOf("CLOSED"));
         shift.setNotes(request.getNotes());
-        // shift.setApprovedBy(...);
 
         shiftRepository.update(shift);
     }
 
-    private Character validateSupervisor(String username, String password) {
-        try {
-            Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password)
-            );
-            return auth.isAuthenticated() ? 'Y' : null;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    @Transactional
+    // --- 5. RECORD CASH FLOW ---
     public CashFlow recordCashFlow(Long cashierId, CashFlowRequest request) {
-        // 1. Find Active Shift
-        CashShift shift = shiftRepository.findActiveShiftByCashier(cashierId)
-                .orElseThrow(() -> new IllegalStateException("No active shift found. Please open a shift first."));
-
-        // 2. Create CashFlow
-        CashFlow cashFlow = new CashFlow();
-        cashFlow.setShiftId(shift.getShiftId());
-        cashFlow.setType(request.getType());
-        cashFlow.setAmount(request.getAmount());
-        cashFlow.setReason(request.getReason());
-        cashFlow.setReferenceNo(request.getReferenceNo());
-        cashFlow.setCreatedBy(cashierId);
-
-        // 3. Save
-        return cashFlowRepository.save(cashFlow);
+        return new CashFlow();
     }
 
-    public Long getActiveShiftId(Long cashierId) {
-        return shiftRepository.findActiveShiftByCashier(cashierId)
-                .map(CashShift::getShiftId)
-                .orElseThrow(() -> new IllegalStateException("No active shift found for cashier"));
+    private String generateShiftNo(Long branchId) {
+        return "SH-" + branchId + "-" + System.currentTimeMillis();
     }
 }

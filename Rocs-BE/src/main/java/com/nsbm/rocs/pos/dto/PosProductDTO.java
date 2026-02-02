@@ -10,10 +10,14 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PosProductDTO {
-    private Long id;
+    private Long productId;
     private String name;
-    private BigDecimal price;
+    private BigDecimal sellingPrice;
     private String sku;
     private String barcode;
+    private BigDecimal taxRate;
+    private String categoryName;
+    private Boolean isSerialized;
+    private BigDecimal availableStock;
 }
 

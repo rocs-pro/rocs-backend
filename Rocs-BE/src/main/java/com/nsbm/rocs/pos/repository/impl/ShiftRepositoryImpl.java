@@ -53,7 +53,10 @@ public class ShiftRepositoryImpl implements ShiftRepository {
         shift.setTotalReturns(rs.getBigDecimal("total_returns"));
 
         // Map strings
-        shift.setStatus(rs.getString("status"));
+        String statusStr = rs.getString("status");
+        if (statusStr != null) {
+            shift.setStatus(CashShift.ShiftStatus.valueOf(statusStr));
+        }
         shift.setNotes(rs.getString("notes"));
 
         return shift;
@@ -74,7 +77,7 @@ public class ShiftRepositoryImpl implements ShiftRepository {
                 shift.getCashierId(),
                 shift.getTerminalId(),
                 shift.getOpeningCash(),
-                shift.getStatus(),
+                shift.getStatus() != null ? shift.getStatus().name() : "OPEN",
                 shift.getApprovedBy(),
                 shift.getApprovedAt(),
                 shift.getNotes()
@@ -106,7 +109,7 @@ public class ShiftRepositoryImpl implements ShiftRepository {
                 shift.getCashDifference(),
                 shift.getTotalSales(),
                 shift.getTotalReturns(),
-                shift.getStatus(),
+                shift.getStatus() != null ? shift.getStatus().name() : null,
                 shift.getNotes(),
                 shift.getShiftId()
         );
