@@ -37,7 +37,8 @@ public class StockOverviewServiceImpl implements StockOverviewService {
             throw new IllegalArgumentException("Branch ID is required for low stock query");
         }
 
-        List<Stock> lowStocks = stockRepository.findLowStockProducts(branchId, threshold);
+        int limit = (threshold != null) ? threshold : 10;
+        List<Stock> lowStocks = stockRepository.findLowStockProducts(branchId, limit);
         return lowStocks.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());

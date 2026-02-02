@@ -16,9 +16,31 @@ public class LogInResponseDTO {
     private String email;
     private String token;
     private Role role;
+    private String redirectPath;
     private String message;
 
     public LogInResponseDTO(String message) {
         this.message = message;
+    }
+
+    public LogInResponseDTO(Long userId, String username, String email, String token, Role role, String message) {
+        this.userId = userId;
+        this.username = username;
+        this.email = email;
+        this.token = token;
+        this.role = role;
+        this.redirectPath = determineRedirectPath(role);
+        this.message = message;
+    }
+
+    public static String determineRedirectPath(Role role) {
+        if (role == null) {
+            return "/pending-approval";
+        }
+        return switch (role) {
+            case ADMIN, BRANCH_MANAGER -> "/dashboard";
+            case CASHIER, SUPERVISOR -> "/pos";
+            case STORE_KEEPER -> "/inventory";
+        };
     }
 }

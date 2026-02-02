@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,37 +46,37 @@ public class AdjustmentServiceImpl implements AdjustmentService {
             Stock newStock = new Stock();
             newStock.setBranchId(adjustmentDTO.getBranchId());
             newStock.setProductId(adjustmentDTO.getProductId());
-            newStock.setQuantity(0);
-            newStock.setReservedQty(0);
+            newStock.setQuantity(BigDecimal.ZERO);
+            newStock.setReservedQty(BigDecimal.ZERO);
             return newStock;
         });
 
-        int adjustmentQty = adjustmentDTO.getAdjustmentQty();
+        BigDecimal adjustmentQty = adjustmentDTO.getQuantity();
 
         switch (adjustmentDTO.getAdjustmentType()) {
             case "ADD":
             case "RETURN":
             case "CORRECTION":
-                if (adjustmentQty > 0) {
-                    stock.setQuantity(stock.getQuantity() + adjustmentQty);
-                } else if (adjustmentQty < 0) {
-                    if (stock.getQuantity() + adjustmentQty < 0) {
+                if (adjustmentQty.compareTo(BigDecimal.ZERO) > 0) {
+                    stock.setQuantity(stock.getQuantity().add(adjustmentQty));
+                } else if (adjustmentQty.compareTo(BigDecimal.ZERO) < 0) {
+                    if (stock.getQuantity().add(adjustmentQty).compareTo(BigDecimal.ZERO) < 0) {
                         throw new InsufficientStockException("Cannot reduce stock below zero");
                     }
-                    stock.setQuantity(stock.getQuantity() + adjustmentQty);
+                    stock.setQuantity(stock.getQuantity().add(adjustmentQty));
                 }
                 break;
 
             case "REMOVE":
             case "DAMAGE":
             case "LOSS":
-                int removeQty = Math.abs(adjustmentQty);
-                if (stock.getQuantity() < removeQty) {
+                BigDecimal removeQty = adjustmentQty.abs();
+                if (stock.getQuantity().compareTo(removeQty) < 0) {
                     throw new InsufficientStockException(
                         "Insufficient stock. Available: " + stock.getQuantity() + ", Required: " + removeQty
                     );
                 }
-                stock.setQuantity(stock.getQuantity() - removeQty);
+                stock.setQuantity(stock.getQuantity().subtract(removeQty));
                 break;
 
             default:
@@ -88,4 +89,3 @@ public class AdjustmentServiceImpl implements AdjustmentService {
         return adjustmentDTO;
     }
 }
-

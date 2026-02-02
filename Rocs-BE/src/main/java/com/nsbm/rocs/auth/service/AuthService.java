@@ -5,7 +5,6 @@ import com.nsbm.rocs.auth.dto.RegisterRequestDTO;
 import com.nsbm.rocs.auth.dto.RegisterResponseDTO;
 import com.nsbm.rocs.entity.main.UserProfile;
 import com.nsbm.rocs.entity.main.Branch;
-import com.nsbm.rocs.entity.enums.Role;
 import com.nsbm.rocs.entity.enums.AccountStatus;
 import com.nsbm.rocs.auth.repo.UserProfileRepo;
 import com.nsbm.rocs.auth.repo.BranchRepo;
@@ -101,6 +100,22 @@ public class AuthService {
         if (existUserByUsername == null) {
             return new LogInResponseDTO("Invalid username");
         }
+
+        // Check if account is pending approval
+        if (existUserByUsername.getAccountStatus() == AccountStatus.PENDING) {
+            return new LogInResponseDTO("Account pending approval. Please wait for admin to activate your account.");
+        }
+
+        // Check if account is rejected
+        if (existUserByUsername.getAccountStatus() == AccountStatus.REJECTED) {
+            return new LogInResponseDTO("Account has been rejected. Please contact administrator.");
+        }
+
+        // Check if account is suspended
+        if (existUserByUsername.getAccountStatus() == AccountStatus.SUSPENDED) {
+            return new LogInResponseDTO("Account is suspended. Please contact administrator.");
+        }
+
         Authentication authentication = authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(username, password));
         if (authentication.isAuthenticated()) {
@@ -109,8 +124,11 @@ public class AuthService {
             claims.put("username", existUserByUsername.getUsername());
             claims.put("email", existUserByUsername.getEmail());
             claims.put("userId", existUserByUsername.getUserId());
+            if (existUserByUsername.getBranch() != null) {
+                claims.put("branchId", existUserByUsername.getBranch().getBranchId());
+            }
 
-            String token = jwtService.generateToken(claims,existUserByUsername);
+            String token = jwtService.generateToken(claims, existUserByUsername);
             return new LogInResponseDTO(
                     existUserByUsername.getUserId(),
                     existUserByUsername.getUsername(),

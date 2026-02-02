@@ -42,4 +42,7 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
     void incrementQuantity(@Param("branchId") Long branchId,
                           @Param("productId") Long productId,
                           @Param("qty") int qty);
+
+    @Query("SELECT s FROM InventoryStock s WHERE s.branchId = :branchId AND s.quantity <= :threshold")
+    List<Stock> findLowStockProducts(@Param("branchId") Long branchId, @Param("threshold") Integer threshold);
 }

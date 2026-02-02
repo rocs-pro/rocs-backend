@@ -11,6 +11,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -23,6 +24,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @NullMarked
 public class SecurityConfig {
 
@@ -30,7 +32,7 @@ public class SecurityConfig {
     private final JwtFilter jwtFilter;
 
     @Autowired
-    public SecurityConfig(MyUserDetailsService userDetailsService,JwtFilter jwtFilter) {
+    public SecurityConfig(MyUserDetailsService userDetailsService, JwtFilter jwtFilter) {
         this.userDetailsService = userDetailsService;
         this.jwtFilter = jwtFilter;
     }
@@ -55,7 +57,7 @@ public class SecurityConfig {
                 registry.addMapping("/**")
                         .allowedOriginPatterns("*")
                         .allowCredentials(true)
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                         .allowedHeaders("*");
             }
         };
@@ -65,13 +67,30 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
+                        // Public endpoints - no authentication required
                         .requestMatchers("/api/v1/auth/**", "/public/**").permitAll()
-                        .requestMatchers("/test/**").hasAnyAuthority("ADMIN")
+
+                        // POS endpoints - accessible by CASHIER, SUPERVISOR, BRANCH_MANAGER, ADMIN
+                        .requestMatchers("/api/v1/pos/**").hasAnyRole("CASHIER", "SUPERVISOR", "BRANCH_MANAGER", "ADMIN")
+
+                        // Inventory endpoints - accessible by STORE_KEEPER, BRANCH_MANAGER, ADMIN
+                        .requestMatchers("/api/inventory/**").hasAnyRole("STORE_KEEPER", "BRANCH_MANAGER", "ADMIN")
+
+                        // Dashboard endpoints - accessible by BRANCH_MANAGER, ADMIN
+                        .requestMatchers("/api/v1/dashboard/**").hasAnyRole("BRANCH_MANAGER", "ADMIN")
+
+                        // Admin only endpoints
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+
+                        // Manager endpoints
+                        .requestMatchers("/api/v1/manager/**").hasAnyRole("BRANCH_MANAGER", "ADMIN")
+
+                        // All other requests need authentication
                         .anyRequest().authenticated())
                 .cors(Customizer.withDefaults())
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-                .sessionManagement(session->session
+                .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         return http.build();
     }
