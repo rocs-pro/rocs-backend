@@ -194,6 +194,7 @@ public class PosService {
                     nextSequence = Integer.parseInt(parts[2]) + 1;
                 }
             } catch (NumberFormatException e) {
+                throw new RuntimeException(e);
             }
         }
 
@@ -222,6 +223,7 @@ public class PosService {
                     nextSequence = Integer.parseInt(parts[2]) + 1;
                 }
             } catch (NumberFormatException e) {
+                throw new RuntimeException(e);
             }
         }
 
