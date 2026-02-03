@@ -1,5 +1,6 @@
 package com.nsbm.rocs.pos.controller;
 
+import com.nsbm.rocs.entity.pos.CashShift;
 import com.nsbm.rocs.pos.dto.ShiftStartRequest;
 import com.nsbm.rocs.pos.dto.shift.CloseShiftRequest;
 import com.nsbm.rocs.pos.service.ShiftService;
@@ -33,6 +34,19 @@ public class ShiftController {
         }
     }
 
+    @GetMapping("/shift/active")
+    public ResponseEntity<ApiResponse<CashShift>> getActiveShift(@RequestParam Long terminalId) {
+        try {
+            CashShift activeShift = shiftService.getActiveShiftByTerminalId(terminalId);
+            if (activeShift == null) {
+                 return ResponseEntity.status(404).body(ApiResponse.error("No active shift found for terminal " + terminalId));
+            }
+            return ResponseEntity.ok(ApiResponse.success("Active shift found", activeShift));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
     @GetMapping({"/shift/{shiftId}/totals", "/shifts/{shiftId}/totals"})
     public ResponseEntity<ApiResponse<Map<String, Object>>> getShiftTotals(@PathVariable Long shiftId) {
         try {
@@ -55,4 +69,24 @@ public class ShiftController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
-}   
+
+    @PutMapping("/shift/{shiftId}/close")
+    public ResponseEntity<ApiResponse<String>> closeShiftById(@PathVariable Long shiftId, @RequestBody CloseShiftRequest request) {
+        try {
+            shiftService.closeShiftById(shiftId, request);
+            return ResponseEntity.ok(ApiResponse.success("Shift closed successfully", "Shift closed"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/cashiers")
+    public ResponseEntity<ApiResponse<java.util.List<com.nsbm.rocs.entity.main.UserProfile>>> getCashiers(@RequestParam Long branchId) {
+        try {
+            java.util.List<com.nsbm.rocs.entity.main.UserProfile> cashiers = shiftService.getCashiersByBranch(branchId);
+            return ResponseEntity.ok(ApiResponse.success("Cashiers retrieved", cashiers));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+}

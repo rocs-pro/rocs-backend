@@ -195,4 +195,15 @@ public class ShiftRepositoryImpl implements ShiftRepository {
             return Optional.empty();
         }
     }
+
+    @Override
+    public Optional<CashShift> findOpenShiftByTerminalId(Long terminalId) {
+        try {
+            String sql = "SELECT * FROM cash_shifts WHERE terminal_id = ? AND status = 'OPEN' LIMIT 1";
+            CashShift shift = jdbcTemplate.queryForObject(sql, shiftRowMapper, terminalId);
+            return Optional.ofNullable(shift);
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
+    }
 }

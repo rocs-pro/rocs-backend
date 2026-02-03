@@ -18,14 +18,14 @@ import java.util.List;
 @CrossOrigin
 public class CashFlowController {
 
-    private final CashFlowRepository cashFlowRepository;
-    private final ShiftService shiftService;
+    @Autowired
+    private CashFlowRepository cashFlowRepository;
 
     @Autowired
-    public CashFlowController(CashFlowRepository cashFlowRepository, ShiftService shiftService) {
-        this.cashFlowRepository = cashFlowRepository;
-        this.shiftService = shiftService;
-    }
+    private ShiftService shiftService;
+
+    // Removed constructor injection to resolve potential circular dependency/loading issues
+
 
     @PostMapping
     public ResponseEntity<ApiResponse<CashFlow>> recordCashFlow(@RequestBody CashFlowRequest request) {
