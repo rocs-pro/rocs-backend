@@ -141,4 +141,31 @@ public class AuthService {
             return new LogInResponseDTO("Invalid credentials");
         }
     }
+
+    public boolean verifySupervisor(String username, String password) {
+        UserProfile user = findByUsername(username);
+        if (user == null) {
+            return false;
+        }
+
+        // Active check
+        if (user.getAccountStatus() != AccountStatus.ACTIVE) {
+            return false;
+        }
+
+        // Role check
+        if (user.getRole() == null) return false;
+
+        String roleName = user.getRole().name();
+
+        boolean isSupervisor = roleName.equals("ADMIN") ||
+                               roleName.equals("BRANCH_MANAGER") ||
+                               roleName.equals("SUPERVISOR") ||
+                               roleName.equals("MANAGER");
+
+        if (!isSupervisor) return false;
+
+        // Password check
+        return bCryptPasswordEncoder.matches(password, user.getPassword());
+    }
 }

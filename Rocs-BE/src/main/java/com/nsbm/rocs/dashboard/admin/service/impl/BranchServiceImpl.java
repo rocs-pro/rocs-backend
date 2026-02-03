@@ -61,7 +61,7 @@ public class BranchServiceImpl implements BranchService {
         if (dto.getLocation() != null) existing.setLocation(dto.getLocation());
         if (dto.getPhone() != null) existing.setPhone(dto.getPhone());
         if (dto.getEmail() != null) existing.setEmail(dto.getEmail());
-        if (dto.getIsActive() != null) existing.setActive(dto.getIsActive());
+        if (dto.getIsActive() != null) existing.setIsActive(dto.getIsActive());
 
         Branch saved = branchRepository.save(existing);
         return toDTO(saved);
@@ -79,14 +79,14 @@ public class BranchServiceImpl implements BranchService {
     private BranchDTO toDTO(Branch b) {
         if (b == null) return null;
         BranchDTO dto = new BranchDTO();
-        dto.setId(b.getId());
+        dto.setId(b.getBranchId());
         dto.setName(b.getName());
         dto.setCode(b.getCode());
         dto.setAddress(b.getAddress());
         dto.setLocation(b.getLocation());
         dto.setPhone(b.getPhone());
         dto.setEmail(b.getEmail());
-        dto.setIsActive(b.getActive());
+        dto.setIsActive(b.getIsActive());
         return dto;
     }
 
@@ -100,7 +100,7 @@ public class BranchServiceImpl implements BranchService {
         b.setLocation(dto.getLocation());
         b.setPhone(dto.getPhone());
         b.setEmail(dto.getEmail());
-        b.setActive(dto.getIsActive() != null ? dto.getIsActive() : true);
+        b.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
         return b;
     }
 }

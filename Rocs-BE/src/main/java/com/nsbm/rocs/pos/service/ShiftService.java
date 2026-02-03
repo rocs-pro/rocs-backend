@@ -42,12 +42,11 @@ public class ShiftService {
         LocalDateTime approvedAt = null;
 
         // Validate Supervisor Credentials if provided
-        if (request.getSupervisor() != null &&
-                request.getSupervisor().getUsername() != null &&
-                !request.getSupervisor().getUsername().isEmpty()) {
+        if (request.getSupervisorUsername() != null &&
+                !request.getSupervisorUsername().isEmpty()) {
 
-            String username = request.getSupervisor().getUsername();
-            String password = request.getSupervisor().getPassword();
+            String username = request.getSupervisorUsername();
+            String password = request.getSupervisorPassword();
 
             if (password == null || password.isEmpty()) {
                 throw new RuntimeException("Supervisor password is required");
