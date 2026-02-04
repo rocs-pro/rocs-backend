@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,8 +30,17 @@ public class SupplierServiceImpl implements SupplierService {
     @Override
     public SupplierResponseDTO createSupplier(SupplierRequestDTO requestDTO) {
         validateDuplicateCode(requestDTO.getCode(), null);
-        Supplier supplier = mapToEntity(new Supplier(), requestDTO);
+        Supplier supplier = new Supplier();
+        mapBasicFields(supplier, requestDTO);
+
+        // Save supplier first to get the ID
         Supplier savedSupplier = supplierRepository.save(supplier);
+
+        // Now handle contacts and branches with the saved supplier ID
+        handleContactsAndBranches(savedSupplier, requestDTO);
+
+        // Save again with contacts and branches
+        savedSupplier = supplierRepository.save(savedSupplier);
         return mapToResponse(savedSupplier);
     }
 
@@ -39,9 +49,18 @@ public class SupplierServiceImpl implements SupplierService {
         Supplier supplier = supplierRepository.findById(supplierId)
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + supplierId));
         validateDuplicateCode(requestDTO.getCode(), supplierId);
+
+        // Clear existing relationships
         supplier.getContacts().clear();
         supplier.getBranches().clear();
-        Supplier updated = supplierRepository.save(mapToEntity(supplier, requestDTO));
+
+        // Update basic fields
+        mapBasicFields(supplier, requestDTO);
+
+        // Handle contacts and branches
+        handleContactsAndBranches(supplier, requestDTO);
+
+        Supplier updated = supplierRepository.save(supplier);
         return mapToResponse(updated);
     }
 
@@ -68,6 +87,16 @@ public class SupplierServiceImpl implements SupplierService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Get all active suppliers
+     */
+    public List<SupplierResponseDTO> getActiveSuppliers() {
+        return supplierRepository.findAll().stream()
+                .filter(supplier -> supplier.getIsActive() != null && supplier.getIsActive())
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     private void validateDuplicateCode(String code, Long existingId) {
         supplierRepository.findByCode(code).ifPresent(existing -> {
             boolean isDuplicate = existingId == null || !existingId.equals(existing.getSupplierId());
@@ -77,7 +106,7 @@ public class SupplierServiceImpl implements SupplierService {
         });
     }
 
-    private Supplier mapToEntity(Supplier supplier, SupplierRequestDTO dto) {
+    private void mapBasicFields(Supplier supplier, SupplierRequestDTO dto) {
         supplier.setCode(dto.getCode());
         supplier.setName(dto.getName());
         supplier.setCompanyName(dto.getCompanyName());
@@ -93,36 +122,40 @@ public class SupplierServiceImpl implements SupplierService {
         supplier.setTaxId(dto.getTaxId());
         supplier.setCreditDays(dto.getCreditDays());
         supplier.setCreditLimit(dto.getCreditLimit());
-        supplier.setIsActive(dto.getIsActive());
+        supplier.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
         supplier.setCreatedBy(dto.getCreatedBy());
+    }
 
-        supplier.getContacts().clear();
-        dto.getContacts().forEach(contactDTO -> {
-            SupplierContact contact = new SupplierContact();
-            contact.setSupplier(supplier);
-            contact.setName(contactDTO.getName());
-            contact.setDesignation(contactDTO.getDesignation());
-            contact.setPhone(contactDTO.getPhone());
-            contact.setEmail(contactDTO.getEmail());
-            contact.setIsPrimary(contactDTO.getIsPrimary());
-            supplier.getContacts().add(contact);
-        });
+    private void handleContactsAndBranches(Supplier supplier, SupplierRequestDTO dto) {
+        // Handle contacts
+        if (dto.getContacts() != null && !dto.getContacts().isEmpty()) {
+            dto.getContacts().forEach(contactDTO -> {
+                SupplierContact contact = new SupplierContact();
+                contact.setSupplier(supplier);
+                contact.setName(contactDTO.getName());
+                contact.setDesignation(contactDTO.getDesignation());
+                contact.setPhone(contactDTO.getPhone());
+                contact.setEmail(contactDTO.getEmail());
+                contact.setIsPrimary(contactDTO.getIsPrimary() != null ? contactDTO.getIsPrimary() : false);
+                supplier.getContacts().add(contact);
+            });
+        }
 
-        supplier.getBranches().clear();
-        dto.getBranches().forEach(branchDTO -> {
-            SupplierBranch branch = new SupplierBranch();
-            SupplierBranchId id = new SupplierBranchId();
-            id.setSupplierId(supplier.getSupplierId());
-            id.setBranchId(branchDTO.getBranchId());
-            branch.setId(id);
-            branch.setSupplier(supplier);
-            branch.setIsPreferred(branchDTO.getIsPreferred());
-            branch.setDiscountPercentage(branchDTO.getDiscountPercentage());
-            branch.setNotes(branchDTO.getNotes());
-            supplier.getBranches().add(branch);
-        });
-
-        return supplier;
+        // Handle branches
+        if (dto.getBranches() != null && !dto.getBranches().isEmpty()) {
+            dto.getBranches().forEach(branchDTO -> {
+                SupplierBranch branch = new SupplierBranch();
+                SupplierBranchId id = new SupplierBranchId();
+                id.setSupplierId(supplier.getSupplierId()); // Now this will have a value
+                id.setBranchId(branchDTO.getBranchId());
+                branch.setId(id);
+                branch.setSupplier(supplier);
+                branch.setIsPreferred(branchDTO.getIsPreferred() != null ? branchDTO.getIsPreferred() : false);
+                branch.setDiscountPercentage(branchDTO.getDiscountPercentage());
+                branch.setNotes(branchDTO.getNotes());
+                supplier.getBranches().add(branch);
+            });
+        }
     }
 
     private SupplierResponseDTO mapToResponse(Supplier supplier) {
@@ -148,27 +181,37 @@ public class SupplierServiceImpl implements SupplierService {
         dto.setCreatedAt(supplier.getCreatedAt());
         dto.setUpdatedAt(supplier.getUpdatedAt());
 
-        dto.setContacts(supplier.getContacts().stream()
-                .map(contact -> {
-                    SupplierContactDTO contactDTO = new SupplierContactDTO();
-                    contactDTO.setContactId(contact.getContactId());
-                    contactDTO.setName(contact.getName());
-                    contactDTO.setDesignation(contact.getDesignation());
-                    contactDTO.setPhone(contact.getPhone());
-                    contactDTO.setEmail(contact.getEmail());
-                    contactDTO.setIsPrimary(contact.getIsPrimary());
-                    return contactDTO;
-                }).collect(Collectors.toList()));
+        // Handle contacts with null safety
+        if (supplier.getContacts() != null) {
+            dto.setContacts(supplier.getContacts().stream()
+                    .map(contact -> {
+                        SupplierContactDTO contactDTO = new SupplierContactDTO();
+                        contactDTO.setContactId(contact.getContactId());
+                        contactDTO.setName(contact.getName());
+                        contactDTO.setDesignation(contact.getDesignation());
+                        contactDTO.setPhone(contact.getPhone());
+                        contactDTO.setEmail(contact.getEmail());
+                        contactDTO.setIsPrimary(contact.getIsPrimary());
+                        return contactDTO;
+                    }).collect(Collectors.toList()));
+        } else {
+            dto.setContacts(new ArrayList<>());
+        }
 
-        dto.setBranches(supplier.getBranches().stream()
-                .map(branch -> {
-                    SupplierBranchDTO branchDTO = new SupplierBranchDTO();
-                    branchDTO.setBranchId(branch.getId().getBranchId());
-                    branchDTO.setIsPreferred(branch.getIsPreferred());
-                    branchDTO.setDiscountPercentage(branch.getDiscountPercentage());
-                    branchDTO.setNotes(branch.getNotes());
-                    return branchDTO;
-                }).collect(Collectors.toList()));
+        // Handle branches with null safety
+        if (supplier.getBranches() != null) {
+            dto.setBranches(supplier.getBranches().stream()
+                    .map(branch -> {
+                        SupplierBranchDTO branchDTO = new SupplierBranchDTO();
+                        branchDTO.setBranchId(branch.getId() != null ? branch.getId().getBranchId() : null);
+                        branchDTO.setIsPreferred(branch.getIsPreferred());
+                        branchDTO.setDiscountPercentage(branch.getDiscountPercentage());
+                        branchDTO.setNotes(branch.getNotes());
+                        return branchDTO;
+                    }).collect(Collectors.toList()));
+        } else {
+            dto.setBranches(new ArrayList<>());
+        }
 
         return dto;
     }
