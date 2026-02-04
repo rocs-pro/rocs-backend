@@ -1,6 +1,7 @@
 package com.nsbm.rocs.config;
 
 import com.nsbm.rocs.inventory.exception.DuplicateResourceException;
+import com.nsbm.rocs.inventory.exception.GRNException;
 import com.nsbm.rocs.inventory.exception.InsufficientStockException;
 import com.nsbm.rocs.inventory.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -73,6 +74,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InsufficientStockException.class)
     public ResponseEntity<Map<String, Object>> handleInsufficientStockException(InsufficientStockException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", ex.getMessage());
+        response.put("status", HttpStatus.BAD_REQUEST.value());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(GRNException.class)
+    public ResponseEntity<Map<String, Object>> handleGRNException(GRNException ex) {
         Map<String, Object> response = new HashMap<>();
         response.put("message", ex.getMessage());
         response.put("status", HttpStatus.BAD_REQUEST.value());
