@@ -68,7 +68,7 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
                         // Public endpoints - no authentication required
-                        .requestMatchers("/api/v1/auth/**", "/public/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**","/api/v1/admin/grns/**","/api/v1/admin/**","/public/**").permitAll()
 
                         // POS endpoints - accessible by CASHIER, SUPERVISOR, BRANCH_MANAGER, ADMIN
                         .requestMatchers("/api/v1/pos/**").hasAnyRole("CASHIER", "SUPERVISOR", "BRANCH_MANAGER", "ADMIN")

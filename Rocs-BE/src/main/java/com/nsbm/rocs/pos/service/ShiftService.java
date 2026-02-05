@@ -42,12 +42,11 @@ public class ShiftService {
         LocalDateTime approvedAt = null;
 
         // Validate Supervisor Credentials if provided
-        if (request.getSupervisor() != null &&
-                request.getSupervisor().getUsername() != null &&
-                !request.getSupervisor().getUsername().isEmpty()) {
+        if (request.getSupervisorUsername() != null &&
+                !request.getSupervisorUsername().isEmpty()) {
 
-            String username = request.getSupervisor().getUsername();
-            String password = request.getSupervisor().getPassword();
+            String username = request.getSupervisorUsername();
+            String password = request.getSupervisorPassword();
 
             if (password == null || password.isEmpty()) {
                 throw new RuntimeException("Supervisor password is required");
@@ -152,6 +151,22 @@ public class ShiftService {
         CashShift shift = shiftRepository.findOpenShiftByCashierId(cashierId)
                 .orElseThrow(() -> new IllegalStateException("No open shift found for this cashier"));
 
+        performCloseShift(shift, request);
+    }
+
+    @Transactional
+    public void closeShiftById(Long shiftId, CloseShiftRequest request) {
+        CashShift shift = shiftRepository.findById(shiftId)
+                .orElseThrow(() -> new RuntimeException("Shift not found: " + shiftId));
+
+        if (shift.getStatus() != CashShift.ShiftStatus.OPEN) {
+            throw new IllegalStateException("Shift is not open/active. Status: " + shift.getStatus());
+        }
+
+        performCloseShift(shift, request);
+    }
+
+    private void performCloseShift(CashShift shift, CloseShiftRequest request) {
         shift = shiftRepository.findByIdWithStats(shift.getShiftId()).orElse(shift);
 
         BigDecimal totalSales = shift.getTotalSales() != null ? shift.getTotalSales() : BigDecimal.ZERO;
@@ -171,6 +186,18 @@ public class ShiftService {
     // --- 5. RECORD CASH FLOW ---
     public CashFlow recordCashFlow(Long cashierId, CashFlowRequest request) {
         return new CashFlow();
+    }
+
+    // --- 6. GET ACTIVE SHIFT BY TERMINAL ---
+    public CashShift getActiveShiftByTerminalId(Long terminalId) {
+        return shiftRepository.findOpenShiftByTerminalId(terminalId)
+                .map(shift -> shiftRepository.findByIdWithStats(shift.getShiftId()).orElse(shift))
+                .orElse(null);
+    }
+
+    // --- 7. GET CASHIERS ---
+    public List<UserProfile> getCashiersByBranch(Long branchId) {
+        return userProfileRepo.findByBranch_BranchIdAndRole(branchId, com.nsbm.rocs.entity.enums.Role.CASHIER);
     }
 
     private String generateShiftNo(Long branchId) {

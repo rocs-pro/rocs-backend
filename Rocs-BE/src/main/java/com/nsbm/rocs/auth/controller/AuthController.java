@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -54,6 +55,16 @@ public class AuthController {
             return ResponseEntity
                     .status(HttpStatus.OK)
                     .body(responseDTO);
+        }
+    }
+
+    @PostMapping("/verify-supervisor")
+    public ResponseEntity<?> verifySupervisor(@RequestBody LogInRequestDTO credentials) {
+        boolean verified = authService.verifySupervisor(credentials.getUsername(), credentials.getPassword());
+        if (verified) {
+             return ResponseEntity.ok(Map.of("status", "verified", "message", "Supervisor verified successfully"));
+        } else {
+             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorDTO("Invalid supervisor credentials or insufficient permissions"));
         }
     }
 }

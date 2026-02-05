@@ -77,4 +77,11 @@ public interface ShiftRepository {
      * @return Optional<CashShift>
      */
     Optional<CashShift> findActiveShiftByCashier(Long cashierId);
+
+    /**
+     * Find the currently open shift for a terminal
+     * @param terminalId - Terminal ID
+     * @return Optional<CashShift>
+     */
+    Optional<CashShift> findOpenShiftByTerminalId(Long terminalId);
 }
