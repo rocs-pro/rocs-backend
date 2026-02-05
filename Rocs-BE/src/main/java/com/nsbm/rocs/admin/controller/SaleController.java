@@ -1,7 +1,6 @@
-package com.nsbm.rocs.dashboard.admin.controller;
+package com.nsbm.rocs.admin.controller;
 
-import com.nsbm.rocs.dashboard.admin.service.SaleService;
-import com.nsbm.rocs.dashboard.admin.service.impl.SaleServiceImpl;
+import com.nsbm.rocs.admin.service.SaleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,18 +12,18 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @RestController
-@RequestMapping("/api/admin/sales")
+@RequestMapping("/api/v1/admin/sales")
 public class SaleController {
 
     private final SaleService saleService;
 
     @Autowired
-    public SaleController(SaleServiceImpl saleService) {
+    public SaleController(SaleService saleService) {
         this.saleService = saleService;
     }
 
     /**
-     * GET /api/admin/sales/sum
+     * GET /api/v1/admin/sales/sum
      * Optional query params:
      *   branchId - Long
      *   startDate - ISO-8601 LocalDateTime string (e.g. 2026-02-01T00:00:00)
@@ -58,7 +57,7 @@ public class SaleController {
     }
 
     /**
-     * GET /api/admin/sales/sum/all-time
+         * GET /api/v1/admin/sales/sum/all-time
      * Returns the total sum of netTotal across all branches for all time.
      */
     @GetMapping("/sum/all-time")

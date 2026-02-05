@@ -1,8 +1,8 @@
-package com.nsbm.rocs.dashboard.admin.service.impl;
+package com.nsbm.rocs.admin.service.impl;
 
-import com.nsbm.rocs.dashboard.admin.service.SaleService;
+import com.nsbm.rocs.admin.service.SaleService;
 import com.nsbm.rocs.entity.pos.Sale;
-import com.nsbm.rocs.pos.repository.SaleRepository;
+import com.nsbm.rocs.admin.repository.SaleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -32,8 +32,10 @@ public class SaleServiceImpl implements SaleService {
      */
     @Override
     public BigDecimal getSumNetTotal(Long branchId, LocalDateTime start, LocalDateTime end) {
-        if (start == null) start = LocalDateTime.MIN;
-        if (end == null) end = LocalDateTime.MAX;
+        // Use safe bounds instead of LocalDateTime.MIN / LocalDateTime.MAX which produce years
+        // that can't be converted to SQL/TIMESTAMP (causes "Invalid value for Year" errors).
+        if (start == null) start = LocalDateTime.of(1970, 1, 1, 0, 0);
+        if (end == null) end = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
 
         List<Sale> sales = saleRepository.findByDateRange(branchId, start, end);
         if (sales == null || sales.isEmpty()) {

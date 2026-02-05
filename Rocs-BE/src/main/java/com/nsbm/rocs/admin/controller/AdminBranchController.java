@@ -1,7 +1,7 @@
-package com.nsbm.rocs.dashboard.admin.controller;
+package com.nsbm.rocs.admin.controller;
 
-import com.nsbm.rocs.dashboard.admin.dto.BranchDTO;
-import com.nsbm.rocs.dashboard.admin.service.impl.BranchServiceImpl;
+import com.nsbm.rocs.admin.dto.BranchDTO;
+import com.nsbm.rocs.admin.service.impl.BranchServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -9,13 +9,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/branches")
-public class BranchController {
+@RequestMapping("/api/v1/admin/branches")
+public class AdminBranchController {
 
     private final BranchServiceImpl branchService;
 
     @Autowired
-    public BranchController(BranchServiceImpl branchService) {
+    public AdminBranchController(BranchServiceImpl branchService) {
         this.branchService = branchService;
     }
 

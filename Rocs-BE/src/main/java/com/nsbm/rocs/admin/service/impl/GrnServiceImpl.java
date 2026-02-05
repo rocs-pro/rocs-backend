@@ -1,8 +1,8 @@
-package com.nsbm.rocs.dashboard.admin.service.impl;
+package com.nsbm.rocs.admin.service.impl;
 
-import com.nsbm.rocs.dashboard.admin.dto.GrnDTO;
-import com.nsbm.rocs.dashboard.admin.service.GrnService;
-import com.nsbm.rocs.dashboard.manager.repository.GrnRepository;
+import com.nsbm.rocs.admin.dto.GrnDTO;
+import com.nsbm.rocs.admin.service.GrnService;
+import com.nsbm.rocs.repository.GRNRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,10 +18,10 @@ import java.util.List;
 @Service
 public class GrnServiceImpl implements GrnService {
 
-    private final GrnRepository grnRepository;
+    private final GRNRepository grnRepository;
 
     @Autowired
-    public GrnServiceImpl(GrnRepository grnRepository) {
+    public GrnServiceImpl(GRNRepository grnRepository) {
         this.grnRepository = grnRepository;
     }
 

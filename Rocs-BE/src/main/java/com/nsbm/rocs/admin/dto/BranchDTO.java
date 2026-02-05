@@ -1,4 +1,4 @@
-package com.nsbm.rocs.dashboard.admin.dto;
+package com.nsbm.rocs.admin.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

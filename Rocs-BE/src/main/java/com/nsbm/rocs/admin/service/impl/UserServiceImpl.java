@@ -1,6 +1,6 @@
-package com.nsbm.rocs.dashboard.admin.service.impl;
+package com.nsbm.rocs.admin.service.impl;
 
-import com.nsbm.rocs.dashboard.admin.service.UserService;
+import com.nsbm.rocs.admin.service.UserService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;

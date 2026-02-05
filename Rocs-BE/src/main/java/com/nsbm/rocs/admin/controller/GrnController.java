@@ -1,8 +1,7 @@
-package com.nsbm.rocs.dashboard.admin.controller;
+package com.nsbm.rocs.admin.controller;
 
-import com.nsbm.rocs.dashboard.admin.dto.GrnDTO;
-import com.nsbm.rocs.dashboard.admin.service.GrnService;
-import com.nsbm.rocs.dashboard.admin.service.impl.GrnServiceImpl;
+import com.nsbm.rocs.admin.dto.GrnDTO;
+import com.nsbm.rocs.admin.service.GrnService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,13 +12,13 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/grns")
+@RequestMapping("/api/v1/admin/grns")
 public class GrnController {
 
     private final GrnService grnService;
 
     @Autowired
-    public GrnController(GrnServiceImpl grnService) {
+    public GrnController(GrnService grnService) {
         this.grnService = grnService;
     }
 

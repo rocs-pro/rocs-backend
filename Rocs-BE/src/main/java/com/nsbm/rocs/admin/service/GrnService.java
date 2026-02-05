@@ -1,6 +1,6 @@
-package com.nsbm.rocs.dashboard.admin.service;
+package com.nsbm.rocs.admin.service;
 
-import com.nsbm.rocs.dashboard.admin.dto.GrnDTO;
+import com.nsbm.rocs.admin.dto.GrnDTO;
 
 import java.util.List;
 

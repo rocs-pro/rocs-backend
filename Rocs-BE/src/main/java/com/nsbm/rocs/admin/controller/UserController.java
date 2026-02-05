@@ -1,14 +1,14 @@
-package com.nsbm.rocs.dashboard.admin.controller;
+package com.nsbm.rocs.admin.controller;
 
-import com.nsbm.rocs.dashboard.admin.service.UserService;
-import com.nsbm.rocs.dashboard.admin.service.impl.UserServiceImpl;
+import com.nsbm.rocs.admin.service.UserService;
+import com.nsbm.rocs.admin.service.impl.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/admin/users")
+@RequestMapping("/api/v1/admin/users")
 public class UserController {
 
     private final UserService userService;
