@@ -1,7 +1,6 @@
 package com.nsbm.rocs.pos.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
@@ -32,18 +31,9 @@ public class ShiftStartRequest {
     @JsonProperty("openingCash")
     private BigDecimal openingCash;
 
-    @Valid
-    @JsonProperty("supervisor")
-    private SupervisorAuth supervisor;
+    @JsonProperty("supervisorUsername")
+    private String supervisorUsername;
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SupervisorAuth {
-        @JsonProperty("username")
-        private String username;
-
-        @JsonProperty("password")
-        private String password;
-    }
+    @JsonProperty("supervisorPassword")
+    private String supervisorPassword;
 }
