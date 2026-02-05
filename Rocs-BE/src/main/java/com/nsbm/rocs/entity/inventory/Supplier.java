@@ -22,25 +22,25 @@ public class Supplier {
     @Column(name = "supplier_id")
     private Long supplierId;
 
-    @Column(name = "code", nullable = false, unique = true, length = 60)
+    @Column(name = "code", nullable = false, unique = true, length = 30)
     private String code;
 
     @Column(name = "name", nullable = false, length = 150)
     private String name;
 
-    @Column(name = "company_name", length = 150)
+    @Column(name = "company_name", length = 200)
     private String companyName;
 
-    @Column(name = "contact_person", length = 150)
+    @Column(name = "contact_person", length = 100)
     private String contactPerson;
 
-    @Column(name = "phone", length = 50)
+    @Column(name = "phone", length = 30)
     private String phone;
 
-    @Column(name = "mobile", length = 50)
+    @Column(name = "mobile", length = 30)
     private String mobile;
 
-    @Column(name = "email", length = 150)
+    @Column(name = "email", length = 120)
     private String email;
 
     @Column(name = "website", length = 150)
@@ -58,7 +58,7 @@ public class Supplier {
     @Column(name = "country", length = 100)
     private String country = "Sri Lanka";
 
-    @Column(name = "tax_id", length = 100)
+    @Column(name = "tax_id", length = 50)
     private String taxId;
 
     @Column(name = "credit_days")

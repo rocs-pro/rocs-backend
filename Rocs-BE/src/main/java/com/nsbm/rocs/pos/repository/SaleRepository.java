@@ -13,6 +13,7 @@ public interface SaleRepository {
 
     /**
      * Save a new Sales
+     * 
      * @param Sale - Sales entity
      * @return Generated Sales_id
      */
@@ -20,6 +21,7 @@ public interface SaleRepository {
 
     /**
      * Find Sales by ID
+     * 
      * @param SalesId - Primary key
      * @return Optional<Sales>
      */
@@ -27,6 +29,7 @@ public interface SaleRepository {
 
     /**
      * Find Sales by invoice number
+     * 
      * @param invoiceNo - Invoice number
      * @return Optional<Sales>
      */
@@ -34,6 +37,7 @@ public interface SaleRepository {
 
     /**
      * Get all Saless for a shift
+     * 
      * @param shiftId - Shift ID
      * @return List of Saless
      */
@@ -41,15 +45,17 @@ public interface SaleRepository {
 
     /**
      * Get Saless by date range
-     * @param branchId - Branch ID
+     * 
+     * @param branchId  - Branch ID
      * @param startDate - Start date
-     * @param endDate - End date
+     * @param endDate   - End date
      * @return List of Saless
      */
     List<Sale> findByDateRange(Long branchId, LocalDateTime startDate, LocalDateTime endDate);
 
     /**
      * Get total Saless count for a shift
+     * 
      * @param shiftId - Shift ID
      * @return Count
      */
@@ -57,12 +63,14 @@ public interface SaleRepository {
 
     /**
      * Get all sales
+     * 
      * @return List of sales
      */
     List<Sale> findAll();
 
     /**
      * Find by payment status
+     * 
      * @param status - Status (PAID, etc)
      * @return List of sales
      */
@@ -70,6 +78,7 @@ public interface SaleRepository {
 
     /**
      * Get total net sales amount for a shift
+     * 
      * @param shiftId - Shift ID
      * @return Total net sales
      */
@@ -77,14 +86,38 @@ public interface SaleRepository {
 
     /**
      * Get the last invoice number
+     * 
      * @return Last invoice number or null if none exists
      */
     String findLastInvoiceNo();
 
     /**
      * Get the last invoice number for today
+     * 
      * @param datePrefix - Date prefix in format INV-YYYYMMDD
      * @return Last invoice number for today or null if none exists
      */
     String findLastInvoiceNoByDatePrefix(String datePrefix);
+
+    /**
+     * Get total net sales for today (all branches)
+     */
+    BigDecimal sumNetTotalForToday();
+
+    /**
+     * Get total net sales all time (all branches)
+     */
+    BigDecimal sumNetTotalAllTime();
+
+    /**
+     * Get top branches by sales volume
+     * Returns List of [BranchId, BranchName, TotalSales]
+     */
+    List<Object[]> findTopBranches(int limit);
+
+    /**
+     * Get daily sales for last N days
+     * Returns List of [Date, TotalSales]
+     */
+    List<Object[]> findLastNDaysSales(int days);
 }

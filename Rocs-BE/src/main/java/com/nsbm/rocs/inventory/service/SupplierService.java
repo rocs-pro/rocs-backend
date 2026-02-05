@@ -16,5 +16,6 @@ public interface SupplierService {
     SupplierResponseDTO getSupplierById(Long supplierId);
 
     List<SupplierResponseDTO> getAllSuppliers();
-}
 
+    List<SupplierResponseDTO> getActiveSuppliers();
+}

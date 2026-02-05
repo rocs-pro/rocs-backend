@@ -10,7 +10,7 @@ import com.nsbm.rocs.entity.main.UserProfile;
 import com.nsbm.rocs.entity.enums.AccountStatus;
 import com.nsbm.rocs.entity.enums.Role;
 import com.nsbm.rocs.inventory.repository.BatchRepository;
-import com.nsbm.rocs.inventory.repository.GRNRepository;
+import com.nsbm.rocs.repository.GRNRepository;
 import com.nsbm.rocs.inventory.repository.ProductRepository;
 import com.nsbm.rocs.inventory.repository.SupplierRepository;
 import com.nsbm.rocs.manager.dto.*;

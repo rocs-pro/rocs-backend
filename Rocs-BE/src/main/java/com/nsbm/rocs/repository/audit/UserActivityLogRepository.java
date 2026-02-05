@@ -10,9 +10,15 @@ import java.util.List;
 @Repository
 public interface UserActivityLogRepository extends JpaRepository<UserActivityLog, Long> {
     List<UserActivityLog> findByUserId(Long userId);
-    List<UserActivityLog> findByBranchId(Long branchId);
-    List<UserActivityLog> findByActivityType(String activityType);
-    List<UserActivityLog> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
-    List<UserActivityLog> findByUserIdAndActivityType(Long userId, String activityType);
-}
 
+    List<UserActivityLog> findByBranchId(Long branchId);
+
+    List<UserActivityLog> findByActivityType(String activityType);
+
+    List<UserActivityLog> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
+
+    List<UserActivityLog> findByUserIdAndActivityType(Long userId, String activityType);
+
+    List<UserActivityLog> findByActivityTypeAndCreatedAtBetween(String activityType, LocalDateTime startDate,
+            LocalDateTime endDate);
+}
