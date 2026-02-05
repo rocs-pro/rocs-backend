@@ -22,10 +22,7 @@ public class GRNController {
     @Autowired
     private GRNService grnService;
 
-    /**
-     * Create a new GRN
-     * POST /api/inventory/grn
-     */
+
     @PostMapping
     public ResponseEntity<ApiResponse<GRNResponseDTO>> createGRN(
             @Valid @RequestBody GRNCreateRequestDTO request,
@@ -44,10 +41,7 @@ public class GRNController {
         }
     }
 
-    /**
-     * Get GRN by ID
-     * GET /api/inventory/grn/{grnId}
-     */
+
     @GetMapping("/{grnId}")
     public ResponseEntity<ApiResponse<GRNResponseDTO>> getGRNById(
             @PathVariable @NotNull Long grnId) {
@@ -64,10 +58,7 @@ public class GRNController {
         }
     }
 
-    /**
-     * Get all GRNs for a branch
-     * GET /api/inventory/grn/branch/{branchId}
-     */
+
     @GetMapping("/branch/{branchId}")
     public ResponseEntity<ApiResponse<List<GRNResponseDTO>>> getGRNsByBranch(
             @PathVariable @NotNull Long branchId) {
@@ -81,10 +72,7 @@ public class GRNController {
         }
     }
 
-    /**
-     * Search GRNs with filters
-     * POST /api/inventory/grn/search
-     */
+
     @PostMapping("/search")
     public ResponseEntity<ApiResponse<List<GRNResponseDTO>>> searchGRNs(
             @RequestBody GRNFilterDTO filter) {
@@ -98,10 +86,7 @@ public class GRNController {
         }
     }
 
-    /**
-     * Update GRN (only if pending)
-     * PUT /api/inventory/grn/{grnId}
-     */
+
     @PutMapping("/{grnId}")
     public ResponseEntity<ApiResponse<GRNResponseDTO>> updateGRN(
             @PathVariable @NotNull Long grnId,
@@ -119,10 +104,7 @@ public class GRNController {
         }
     }
 
-    /**
-     * Approve GRN
-     * PUT /api/inventory/grn/{grnId}/approve
-     */
+
     @PutMapping("/{grnId}/approve")
     public ResponseEntity<ApiResponse<GRNResponseDTO>> approveGRN(
             @PathVariable @NotNull Long grnId,
@@ -140,10 +122,7 @@ public class GRNController {
         }
     }
 
-    /**
-     * Update GRN payment status
-     * PUT /api/inventory/grn/{grnId}/payment-status
-     */
+
     @PutMapping("/{grnId}/payment-status")
     public ResponseEntity<ApiResponse<GRNResponseDTO>> updatePaymentStatus(
             @PathVariable @NotNull Long grnId,
@@ -161,10 +140,7 @@ public class GRNController {
         }
     }
 
-    /**
-     * Delete GRN (only if pending)
-     * DELETE /api/inventory/grn/{grnId}
-     */
+
     @DeleteMapping("/{grnId}")
     public ResponseEntity<ApiResponse<Void>> deleteGRN(
             @PathVariable @NotNull Long grnId) {
@@ -181,10 +157,6 @@ public class GRNController {
         }
     }
 
-    /**
-     * Get GRN statistics for a branch
-     * GET /api/inventory/grn/branch/{branchId}/stats
-     */
     @GetMapping("/branch/{branchId}/stats")
     public ResponseEntity<ApiResponse<GRNStatsDTO>> getGRNStats(
             @PathVariable @NotNull Long branchId,
@@ -199,10 +171,7 @@ public class GRNController {
         }
     }
 
-    /**
-     * Reject GRN
-     * PUT /api/inventory/grn/{grnId}/reject
-     */
+
     @PutMapping("/{grnId}/reject")
     public ResponseEntity<ApiResponse<GRNResponseDTO>> rejectGRN(
             @PathVariable @NotNull Long grnId,
@@ -221,10 +190,7 @@ public class GRNController {
         }
     }
 
-    /**
-     * Get GRN items by product
-     * GET /api/inventory/grn/product/{productId}/items
-     */
+
     @GetMapping("/product/{productId}/items")
     public ResponseEntity<ApiResponse<List<GRNItemDTO>>> getGRNItemsByProduct(
             @PathVariable @NotNull Long productId,
@@ -239,10 +205,7 @@ public class GRNController {
         }
     }
 
-    /**
-     * Check if GRN number exists
-     * GET /api/inventory/grn/check-number/{grnNo}
-     */
+
     @GetMapping("/check-number/{grnNo}")
     public ResponseEntity<ApiResponse<Boolean>> checkGRNNumber(
             @PathVariable @NotNull String grnNo) {
@@ -256,10 +219,7 @@ public class GRNController {
         }
     }
 
-    /**
-     * Get GRNs by supplier
-     * GET /api/inventory/grn/supplier/{supplierId}
-     */
+
     @GetMapping("/supplier/{supplierId}")
     public ResponseEntity<ApiResponse<List<GRNResponseDTO>>> getGRNsBySupplier(
             @PathVariable @NotNull Long supplierId) {
@@ -275,10 +235,7 @@ public class GRNController {
         }
     }
 
-    /**
-     * Get pending GRNs for approval
-     * GET /api/inventory/grn/pending
-     */
+
     @GetMapping("/pending")
     public ResponseEntity<ApiResponse<List<GRNResponseDTO>>> getPendingGRNs(
             @RequestParam(required = false) Long branchId) {
