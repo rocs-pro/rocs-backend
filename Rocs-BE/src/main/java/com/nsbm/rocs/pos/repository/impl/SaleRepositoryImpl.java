@@ -17,7 +17,6 @@ import java.util.Optional;
 @AllArgsConstructor
 public class SaleRepositoryImpl implements SaleRepository {
 
-
     private final JdbcTemplate jdbcTemplate;
 
     private final RowMapper<Sale> saleRowMapper = (rs, _) -> {
@@ -93,8 +92,7 @@ public class SaleRepositoryImpl implements SaleRepository {
                 sale.getChangeAmount(),
                 sale.getPaymentStatus(),
                 sale.getSaleType(),
-                sale.getNotes()
-        );
+                sale.getNotes());
 
         // Get generated ID
         return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
@@ -181,5 +179,47 @@ public class SaleRepositoryImpl implements SaleRepository {
         } catch (EmptyResultDataAccessException e) {
             return null;
         }
+    }
+
+    @Override
+    public java.math.BigDecimal sumNetTotalForToday() {
+        String sql = "SELECT SUM(net_total) FROM sales WHERE DATE(sale_date) = CURDATE()";
+        java.math.BigDecimal sum = jdbcTemplate.queryForObject(sql, java.math.BigDecimal.class);
+        return sum != null ? sum : java.math.BigDecimal.ZERO;
+    }
+
+    @Override
+    public java.math.BigDecimal sumNetTotalAllTime() {
+        String sql = "SELECT SUM(net_total) FROM sales";
+        java.math.BigDecimal sum = jdbcTemplate.queryForObject(sql, java.math.BigDecimal.class);
+        return sum != null ? sum : java.math.BigDecimal.ZERO;
+    }
+
+    @Override
+    public List<Object[]> findTopBranches(int limit) {
+        String sql = "SELECT b.branch_id, b.name, SUM(s.net_total) as total " +
+                "FROM sales s " +
+                "JOIN branches b ON s.branch_id = b.branch_id " +
+                "GROUP BY b.branch_id, b.name " +
+                "ORDER BY total DESC " +
+                "LIMIT ?";
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new Object[] {
+                rs.getLong("branch_id"),
+                rs.getString("name"),
+                rs.getBigDecimal("total")
+        }, limit);
+    }
+
+    @Override
+    public List<Object[]> findLastNDaysSales(int days) {
+        String sql = "SELECT DATE(sale_date) as d, SUM(net_total) as total " +
+                "FROM sales " +
+                "WHERE sale_date >= DATE_SUB(NOW(), INTERVAL ? DAY) " +
+                "GROUP BY DATE(sale_date) " +
+                "ORDER BY d ASC";
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new Object[] {
+                rs.getDate("d").toString(),
+                rs.getBigDecimal("total")
+        }, days);
     }
 }

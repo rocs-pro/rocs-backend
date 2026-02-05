@@ -17,6 +17,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -38,14 +39,20 @@ public class SecurityConfig {
     }
 
     @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(12);
+    }
+
+    @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
-        authProvider.setPasswordEncoder(new BCryptPasswordEncoder(12));
+        authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
+            throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
@@ -71,7 +78,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**","/api/v1/admin/grns/**","/api/v1/admin/**","/public/**").permitAll()
 
                         // POS endpoints - accessible by CASHIER, SUPERVISOR, BRANCH_MANAGER, ADMIN
-                        .requestMatchers("/api/v1/pos/**").hasAnyRole("CASHIER", "SUPERVISOR", "BRANCH_MANAGER", "ADMIN")
+                        .requestMatchers("/api/v1/pos/**")
+                        .hasAnyRole("CASHIER", "SUPERVISOR", "BRANCH_MANAGER", "ADMIN")
 
                         // Inventory endpoints - accessible by STORE_KEEPER, BRANCH_MANAGER, ADMIN
                         .requestMatchers("/api/inventory/**").hasAnyRole("STORE_KEEPER", "BRANCH_MANAGER", "ADMIN")
@@ -80,7 +88,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/dashboard/**").hasAnyRole("BRANCH_MANAGER", "ADMIN")
 
                         // Admin only endpoints
-                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/admin/**", "/api/admin/**").hasRole("ADMIN")
 
                         // Manager endpoints
                         .requestMatchers("/api/v1/manager/**").hasAnyRole("BRANCH_MANAGER", "ADMIN")

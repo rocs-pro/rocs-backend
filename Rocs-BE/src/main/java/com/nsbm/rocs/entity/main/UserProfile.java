@@ -1,6 +1,7 @@
 package com.nsbm.rocs.entity.main;
 
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nsbm.rocs.entity.enums.AccountStatus;
 import com.nsbm.rocs.entity.enums.Role;
 import jakarta.persistence.*;
@@ -19,6 +20,7 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @Table(name = "user_profiles")
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UserProfile implements UserDetails {
 
     @Id
@@ -27,6 +29,7 @@ public class UserProfile implements UserDetails {
 
     @ManyToOne
     @JoinColumn(name = "branch_id")
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private Branch branch;
 
     @Column(nullable = false, unique = true, length = 100)
@@ -51,13 +54,13 @@ public class UserProfile implements UserDetails {
     @Column(length = 40)
     private Role role; // Assigned ONLY after approval
 
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private AccountStatus accountStatus;
 
     @ManyToOne
     @JoinColumn(name = "approved_by")
+    @JsonIgnore
     private UserProfile approvedBy;
 
     private LocalDateTime approvedAt;
@@ -83,7 +86,9 @@ public class UserProfile implements UserDetails {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-        this.accountStatus = AccountStatus.PENDING;
+        if (this.accountStatus == null) {
+            this.accountStatus = AccountStatus.PENDING;
+        }
         this.emailVerified = false;
     }
 
@@ -91,8 +96,6 @@ public class UserProfile implements UserDetails {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-
-
 
     @Override
     @NonNull
