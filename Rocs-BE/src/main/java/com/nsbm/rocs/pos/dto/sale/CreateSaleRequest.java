@@ -15,6 +15,7 @@ import java.util.List;
 public class CreateSaleRequest {
 
 
+    private Long saleId;    // NEW: For updating Held/Pending sales
     private Long customerId;
 
     @NotEmpty(message = "Sale items are required")

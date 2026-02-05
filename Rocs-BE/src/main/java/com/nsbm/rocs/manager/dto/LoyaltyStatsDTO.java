@@ -9,8 +9,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ApprovalUpdateRequest {
-    private String status;
-    private String notes;
-    private String role;
+public class LoyaltyStatsDTO {
+    private String title;
+    private String value;
+    private String description;
+    private String trend; // up, down, neutral
+    private String icon;  // icon key
 }

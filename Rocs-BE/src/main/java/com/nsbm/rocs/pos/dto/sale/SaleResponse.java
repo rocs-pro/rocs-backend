@@ -1,5 +1,6 @@
 package com.nsbm.rocs.pos.dto.sale;
 
+import com.nsbm.rocs.entity.pos.Customer;
 import lombok.Getter;
 
 import java.math.BigDecimal;
@@ -13,6 +14,7 @@ public class SaleResponse {
     private String invoiceNo;
     private Long customerId;
     private String customerName;
+    private Customer customer; // Full customer entity for recall
     private Long cashierId;
     private String cashierName;
     private Long branchId;
@@ -52,6 +54,11 @@ public class SaleResponse {
 
         public Builder customerName(String customerName) {
             response.customerName = customerName;
+            return this;
+        }
+
+        public Builder customer(Customer customer) {
+            response.customer = customer;
             return this;
         }
 

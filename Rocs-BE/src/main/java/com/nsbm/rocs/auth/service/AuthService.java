@@ -6,14 +6,17 @@ import com.nsbm.rocs.auth.dto.RegisterResponseDTO;
 import com.nsbm.rocs.entity.main.UserProfile;
 import com.nsbm.rocs.entity.main.Branch;
 import com.nsbm.rocs.entity.enums.AccountStatus;
+import com.nsbm.rocs.entity.audit.Approval;
 import com.nsbm.rocs.auth.repo.UserProfileRepo;
 import com.nsbm.rocs.auth.repo.BranchRepo;
+import com.nsbm.rocs.repository.audit.ApprovalRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,14 +28,16 @@ public class AuthService {
 
     private final UserProfileRepo userProfileRepo;
     private final BranchRepo branchRepo;
+    private final ApprovalRepository approvalRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder(12);
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
     @Autowired
-    public AuthService(UserProfileRepo userProfileRepo, BranchRepo branchRepo, AuthenticationManager authenticationManager, JwtService jwtService) {
+    public AuthService(UserProfileRepo userProfileRepo, BranchRepo branchRepo, ApprovalRepository approvalRepository, AuthenticationManager authenticationManager, JwtService jwtService) {
         this.userProfileRepo = userProfileRepo;
         this.branchRepo = branchRepo;
+        this.approvalRepository = approvalRepository;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
     }
@@ -52,15 +57,26 @@ public class AuthService {
     }
 
     //    register user
+    @Transactional
     public RegisterResponseDTO registerUser(RegisterRequestDTO registerRequestDTO) {
 
         UserProfile existUserByEmail = findByEmail(registerRequestDTO.getEmail());
         if (existUserByEmail != null) {
-            return new RegisterResponseDTO("User with this email already exists");
+            return new RegisterResponseDTO("EMAIL: User with this email already exists");
         }
         UserProfile existUserByUsername = findByUsername(registerRequestDTO.getUsername());
         if (existUserByUsername != null) {
-            return new RegisterResponseDTO("User with this username already exists");
+            return new RegisterResponseDTO("USERNAME: User with this username already exists");
+        }
+
+        Optional<UserProfile> existUserByPhone = userProfileRepo.findByPhone(registerRequestDTO.getPhone());
+        if (existUserByPhone.isPresent()) {
+            return new RegisterResponseDTO("PHONE: User with this phone number already exists");
+        }
+
+        Optional<UserProfile> existUserByEmployeeId = userProfileRepo.findByEmployeeId(registerRequestDTO.getEmployeeId());
+        if (existUserByEmployeeId.isPresent()) {
+            return new RegisterResponseDTO("EMPLOYEE_ID: User with this Employee ID already exists");
         }
 
         Branch branch = branchRepo.findById(registerRequestDTO.getBranchId())
@@ -84,6 +100,17 @@ public class AuthService {
         userProfile.setAccountStatus(AccountStatus.PENDING);
 
         UserProfile registerUser = userProfileRepo.save(userProfile);
+
+        // Create Approval Request
+        Approval approval = new Approval();
+        approval.setBranchId(branch.getBranchId());
+        approval.setType("USER_REGISTRATION");
+        approval.setReferenceId(registerUser.getUserId());
+        approval.setReferenceNo("USER-" + registerUser.getUsername());
+        approval.setStatus("PENDING");
+        approval.setRequestedBy(registerUser.getUserId());
+        approval.setRequestNotes("User registration for " + registerUser.getFullName());
+        approvalRepository.save(approval);
 
         return new RegisterResponseDTO(
                 registerUser.getUserId(),

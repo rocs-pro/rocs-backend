@@ -21,4 +21,6 @@ public class CashFlowRequest {
     private String reason;
 
     private String referenceNo;
+
+    private Long shiftId;
 }

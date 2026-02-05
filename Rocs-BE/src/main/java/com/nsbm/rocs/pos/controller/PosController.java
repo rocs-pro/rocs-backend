@@ -97,4 +97,32 @@ public class PosController {
                 HttpStatus.OK
         );
     }
+
+    @PostMapping("/sales/hold")
+    public ResponseEntity<ApiResponse<SaleResponse>> holdBill(@RequestBody CreateSaleRequest request) {
+        request.setStatus("HELD");
+        return submitOrder(request);
+    }
+
+    @GetMapping("/sales/held")
+    public ResponseEntity<ApiResponse<List<SaleSummaryDTO>>> getHeldBills(@RequestParam(required = false) Long branchId) {
+        return ResponseEntity.ok(ApiResponse.success("Fetched held bills", posService.getHeldBills(branchId)));
+    }
+
+    @PostMapping("/sales/{id}/recall")
+    public ResponseEntity<ApiResponse<SaleResponse>> recallBill(@PathVariable Long id) {
+        // Change status to PENDING to effectively extract it from HELD list
+        posService.updateSaleStatus(id, "PENDING");
+        return getBillById(id);
+    }
+
+    @PostMapping("/returns")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> processReturn(@RequestBody com.nsbm.rocs.pos.dto.returns.ReturnRequest request) {
+        try {
+            Long returnId = posService.processReturn(request);
+            return ResponseEntity.ok(ApiResponse.success("Return processed successfully", Map.of("returnId", returnId)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }

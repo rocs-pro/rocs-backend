@@ -34,4 +34,7 @@ public class CashFlow {
 
     @Column(name = "shift_id")
     private Long shiftId;
+
+    @Column(name = "status")
+    private String status = "PENDING"; // PENDING, APPROVED, REJECTED
 }

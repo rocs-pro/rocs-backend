@@ -17,6 +17,8 @@ public interface UserProfileRepo extends JpaRepository<UserProfile, Long> {
 
     Optional<UserProfile> findByUsername(String username);
     Optional<UserProfile> findByEmail(String email);
+    Optional<UserProfile> findByPhone(String phone);
+    Optional<UserProfile> findByEmployeeId(String employeeId);
 
     @Query("SELECT u FROM UserProfile u WHERE u.branch.branchId = :branchId AND u.role = :role")
     List<UserProfile> findByBranch_BranchIdAndRole(@Param("branchId") Long branchId, @Param("role") Role role);

@@ -3,11 +3,19 @@ package com.nsbm.rocs.pos.service;
 import com.nsbm.rocs.auth.repo.UserProfileRepo;
 import com.nsbm.rocs.entity.main.UserProfile;
 import com.nsbm.rocs.entity.pos.CashFlow;
+
 import com.nsbm.rocs.entity.pos.CashShift;
 import com.nsbm.rocs.pos.dto.CashFlowRequest;
 import com.nsbm.rocs.pos.dto.ShiftStartRequest;
 import com.nsbm.rocs.pos.dto.shift.CloseShiftRequest;
 import com.nsbm.rocs.pos.repository.ShiftRepository;
+import com.nsbm.rocs.pos.repository.CashFlowRepository;
+import com.nsbm.rocs.pos.repository.SaleRepository;
+import com.nsbm.rocs.pos.repository.SalesReturnRepository;
+import com.nsbm.rocs.pos.repository.PaymentRepository;
+import com.nsbm.rocs.repository.audit.ApprovalRepository;
+import com.nsbm.rocs.entity.audit.Approval;
+import com.nsbm.rocs.service.audit.ActivityLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,12 +35,32 @@ public class ShiftService {
     private final ShiftRepository shiftRepository;
     private final AuthenticationManager authenticationManager;
     private final UserProfileRepo userProfileRepo;
+    private final CashFlowRepository cashFlowRepository;
+    private final SaleRepository saleRepository;
+    private final SalesReturnRepository salesReturnRepository;
+    private final PaymentRepository paymentRepository;
+    private final ApprovalRepository approvalRepository;
+    private final ActivityLogService activityLogService;
 
     @Autowired
-    public ShiftService(ShiftRepository shiftRepository, AuthenticationManager authenticationManager, UserProfileRepo userProfileRepo) {
+    public ShiftService(ShiftRepository shiftRepository, 
+                        AuthenticationManager authenticationManager, 
+                        UserProfileRepo userProfileRepo, 
+                        CashFlowRepository cashFlowRepository,
+                        SaleRepository saleRepository,
+                        SalesReturnRepository salesReturnRepository,
+                        PaymentRepository paymentRepository,
+                        ApprovalRepository approvalRepository,
+                        ActivityLogService activityLogService) {
         this.shiftRepository = shiftRepository;
         this.authenticationManager = authenticationManager;
         this.userProfileRepo = userProfileRepo;
+        this.cashFlowRepository = cashFlowRepository;
+        this.saleRepository = saleRepository;
+        this.salesReturnRepository = salesReturnRepository;
+        this.paymentRepository = paymentRepository;
+        this.approvalRepository = approvalRepository;
+        this.activityLogService = activityLogService;
     }
 
     // --- 1. START SHIFT ---
@@ -116,7 +144,24 @@ public class ShiftService {
         shift.setExpectedCash(request.getOpeningCash());
         shift.setCashDifference(BigDecimal.ZERO);
 
-        return shiftRepository.save(shift);
+        Long savedShiftId = shiftRepository.save(shift);
+        shift.setShiftId(savedShiftId);
+     
+        // Log Activity
+        activityLogService.logActivity(
+            request.getBranchId(),
+            request.getTerminalId(),
+            request.getCashierId(),
+            null, // username fetched inside service if needed, or pass it if known. we know ID.
+            "CASHIER",
+            "SHIFT_OPEN",
+            "SHIFT",
+            savedShiftId,
+            "Shift #" + shift.getShiftNo() + " opened with opening cash " + request.getOpeningCash(),
+            null
+        );
+
+        return savedShiftId;
     }
 
     // --- 2. GET ACTIVE SHIFT ID ---
@@ -127,29 +172,76 @@ public class ShiftService {
     }
 
     // --- 3. GET SHIFT TOTALS ---
+    // --- 3. GET SHIFT TOTALS ---
     public Map<String, Object> getShiftTotals(Long shiftId) {
-        CashShift shift = shiftRepository.findByIdWithStats(shiftId)
+        CashShift shift = shiftRepository.findById(shiftId)
                 .orElseThrow(() -> new RuntimeException("Shift not found: " + shiftId));
+
+        // 1. Sales
+        BigDecimal sales = saleRepository.sumNetTotalByShiftId(shiftId);
+        if (sales == null) sales = BigDecimal.ZERO;
+
+        // 2. Returns
+        BigDecimal returns = salesReturnRepository.sumTotalAmountByShiftId(shiftId);
+        if (returns == null) returns = BigDecimal.ZERO;
+
+        // 3. Cash Flows
+        BigDecimal paidIn = cashFlowRepository.getTotalByTypeAndStatus(shiftId, "PAID_IN", "APPROVED");
+        if (paidIn == null) paidIn = BigDecimal.ZERO;
+        
+        BigDecimal paidOut = cashFlowRepository.getTotalByTypeAndStatus(shiftId, "PAID_OUT", "APPROVED");
+        if (paidOut == null) paidOut = BigDecimal.ZERO;
+
+        long pendingRequests = cashFlowRepository.countByShiftIdAndStatus(shiftId, "PENDING");
+
+        // Breakdowns
+        BigDecimal cashSales = paymentRepository.sumTotalByShiftIdAndType(shiftId, "CASH");
+        if (cashSales == null) cashSales = BigDecimal.ZERO;
+
+        BigDecimal cardSales = paymentRepository.sumTotalByShiftIdAndType(shiftId, "CARD");
+        if (cardSales == null) cardSales = BigDecimal.ZERO;
+
+        BigDecimal otherSales = paymentRepository.sumOtherPaymentsByShiftId(shiftId);
+        if (otherSales == null) otherSales = BigDecimal.ZERO;
 
         Map<String, Object> totals = new HashMap<>();
         totals.put("shiftId", shift.getShiftId());
         totals.put("openingCash", shift.getOpeningCash());
-        totals.put("totalSales", shift.getTotalSales());
-        totals.put("totalReturns", shift.getTotalReturns());
+        totals.put("totalSales", sales);
+        totals.put("cashSales", cashSales);
+        totals.put("cardTotal", cardSales);
+        totals.put("otherPayments", otherSales);
+        totals.put("totalReturns", returns);
+        totals.put("paidIn", paidIn);
+        totals.put("paidOut", paidOut);
+        totals.put("pendingRequests", pendingRequests);
 
+        // Expected Cash = Opening + Cash Sales + Paid In - Paid Out - Returns (Assuming returns are cash for safety, or refine later)
+        // If we strictly want Cash in Drawer, we should use cashSales.
+        // Total Sales includes Card. We shouldn't add Card sales to expected CASH.
         BigDecimal expected = shift.getOpeningCash()
-                .add(shift.getTotalSales() != null ? shift.getTotalSales() : BigDecimal.ZERO)
-                .subtract(shift.getTotalReturns() != null ? shift.getTotalReturns() : BigDecimal.ZERO);
-
+                .add(cashSales)
+                .subtract(returns)
+                .add(paidIn)
+                .subtract(paidOut);
+        
         totals.put("expectedCash", expected);
         return totals;
     }
+
+
 
     // --- 4. CLOSE SHIFT ---
     @Transactional
     public void closeShift(Long cashierId, CloseShiftRequest request) {
         CashShift shift = shiftRepository.findOpenShiftByCashierId(cashierId)
                 .orElseThrow(() -> new IllegalStateException("No open shift found for this cashier"));
+        
+        // Check for pending approvals
+        long pending = cashFlowRepository.countByShiftIdAndStatus(shift.getShiftId(), "PENDING");
+        if (pending > 0) {
+            throw new IllegalStateException("Cannot close shift with " + pending + " pending cash flow requests. waiting for approval.");
+        }
 
         performCloseShift(shift, request);
     }
@@ -181,18 +273,126 @@ public class ShiftService {
         shift.setNotes(request.getNotes());
 
         shiftRepository.update(shift);
+
+        // Log Activity
+        activityLogService.logActivity(
+            shift.getBranchId(),
+            shift.getTerminalId(),
+            shift.getCashierId(),
+            null, // username
+            "CASHIER",
+            "SHIFT_CLOSE",
+            "SHIFT",
+            shift.getShiftId(),
+            "Shift #" + shift.getShiftNo() + " closed. Closing Cash: " + request.getClosingCash(),
+            "Expected: " + expected + ", Diff: " + shift.getCashDifference()
+        );
     }
 
     // --- 5. RECORD CASH FLOW ---
+    @Transactional
     public CashFlow recordCashFlow(Long cashierId, CashFlowRequest request) {
-        return new CashFlow();
+        CashShift shift;
+
+        if (request.getShiftId() != null) {
+            shift = shiftRepository.findById(request.getShiftId())
+                    .orElseThrow(() -> new IllegalStateException("Shift not found: " + request.getShiftId()));
+            
+            // Optionally check if it's OPEN, though not strictly required if we just want to record it
+            if (shift.getStatus() != CashShift.ShiftStatus.OPEN) {
+                 throw new IllegalStateException("Cannot record cash flow for closed shift: " + request.getShiftId());
+            }
+        } else {
+            shift = shiftRepository.findOpenShiftByCashierId(cashierId)
+                    .orElseThrow(() -> new IllegalStateException("No open shift found for this cashier"));
+        }
+        
+        CashFlow flow = new CashFlow();
+        flow.setShiftId(shift.getShiftId());
+        flow.setCreatedBy(cashierId);
+        flow.setCreatedAt(LocalDateTime.now());
+        flow.setType(request.getType());
+        flow.setAmount(request.getAmount());
+        flow.setReason(request.getReason());
+        flow.setReferenceNo(request.getReferenceNo());
+        flow.setStatus("PENDING"); // Pending Manager Approval
+        
+        CashFlow savedFlow = cashFlowRepository.save(flow);
+
+        // Auto-approve Logic (if small amount, etc) - for now it's PENDING
+
+        // Create Approval Request
+        if ("PENDING".equals(savedFlow.getStatus())) {
+             Approval approval = new Approval();
+             approval.setReferenceId(savedFlow.getFlowId());
+             approval.setType("CASH_FLOW_" + flow.getType()); // CASH_FLOW_PAID_IN / OUT
+             approval.setStatus("PENDING");
+             approval.setRequestedBy(cashierId);
+             approval.setCreatedAt(LocalDateTime.now());
+             approval.setBranchId(shift.getBranchId());
+             
+             // Reference info
+             approval.setReferenceNo("CF-" + savedFlow.getFlowId());
+             approval.setRequestNotes(request.getType() + ": " + request.getAmount() + " - " + request.getReason());
+             
+             approvalRepository.save(approval);
+        }
+
+        // Log Activity
+        activityLogService.logActivity(
+            shift.getBranchId(),
+            shift.getTerminalId(),
+            cashierId,
+            null,
+            "CASHIER",
+            "CASH_FLOW_REQUEST",
+            "CASH_FLOW",
+            savedFlow.getFlowId(),
+            "Requested " + request.getType() + " of " + request.getAmount(),
+            request.getReason()
+        );
+
+        return savedFlow;
     }
 
-    // --- 6. GET ACTIVE SHIFT BY TERMINAL ---
-    public CashShift getActiveShiftByTerminalId(Long terminalId) {
-        return shiftRepository.findOpenShiftByTerminalId(terminalId)
-                .map(shift -> shiftRepository.findByIdWithStats(shift.getShiftId()).orElse(shift))
-                .orElse(null);
+    // --- 6. GET ACTIVE SHIFT ---
+    public com.nsbm.rocs.pos.dto.shift.ShiftResponse getActiveShift(Long terminalId, Long cashierId) {
+        CashShift shift = null;
+
+        if (cashierId != null) {
+            shift = shiftRepository.findOpenShiftByCashierId(cashierId)
+                    .map(s -> shiftRepository.findByIdWithStats(s.getShiftId()).orElse(s))
+                    .orElse(null);
+        }
+
+        // Fallback: Check terminal only if cashierId not provided or strictly needed logic
+        // But user request specifically asks for logged cashier check. 
+        // If cashierId is null (not logged in?), maybe we check terminal.
+        if (shift == null && cashierId == null) {
+             shift = shiftRepository.findOpenShiftByTerminalId(terminalId)
+                    .map(s -> shiftRepository.findByIdWithStats(s.getShiftId()).orElse(s))
+                    .orElse(null);
+        }
+
+        if (shift == null) return null;
+
+        String cashierName = userProfileRepo.findById(shift.getCashierId())
+                .map(UserProfile::getFullName)
+                .orElse(userProfileRepo.findById(shift.getCashierId())
+                        .map(UserProfile::getUsername)
+                        .orElse("Unknown Cashier"));
+
+        return new com.nsbm.rocs.pos.dto.shift.ShiftResponse.Builder()
+                .shiftId(shift.getShiftId())
+                .cashierId(shift.getCashierId())
+                .cashierName(cashierName)
+                .branchId(shift.getBranchId())
+                .openingCash(shift.getOpeningCash())
+                .totalSales(shift.getTotalSales())
+                .totalReturns(shift.getTotalReturns())
+                .openedAt(shift.getOpenedAt())
+                .status(shift.getStatus().name())
+                .build();
     }
 
     // --- 7. GET CASHIERS ---

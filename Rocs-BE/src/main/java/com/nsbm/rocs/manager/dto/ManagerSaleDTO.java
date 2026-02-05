@@ -5,12 +5,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ApprovalUpdateRequest {
-    private String status;
-    private String notes;
-    private String role;
+public class ManagerSaleDTO {
+    private Long id;
+    private String date;
+    private BigDecimal amount;
+    private String paymentStatus;
+    private String invoiceNo;
 }

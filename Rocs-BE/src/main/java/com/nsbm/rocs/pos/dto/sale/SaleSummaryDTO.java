@@ -10,10 +10,13 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SaleSummaryDTO {
+    private Long saleId;      // Primary Key
     private String id;        // Mapped from invoiceNo
     private String time;      // Formatted saleDate
     private Integer items;    // Count of items
-    private BigDecimal total; // netTotal
+    private BigDecimal netTotal; // Was total
+    private BigDecimal grossTotal;
+    private String customerName;
     private String status;    // paymentStatus
 }
 

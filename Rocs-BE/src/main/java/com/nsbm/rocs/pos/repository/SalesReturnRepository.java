@@ -13,5 +13,8 @@ public interface SalesReturnRepository extends JpaRepository<SalesReturn, Long> 
     List<SalesReturn> findByBranchId(Long branchId);
     List<SalesReturn> findBySaleId(Long saleId);
     List<SalesReturn> findByStatus(String status);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(sr.totalAmount), 0) FROM SalesReturn sr WHERE sr.shiftId = :shiftId AND sr.status = 'APPROVED'")
+    java.math.BigDecimal sumTotalAmountByShiftId(@org.springframework.data.repository.query.Param("shiftId") Long shiftId);
 }
 

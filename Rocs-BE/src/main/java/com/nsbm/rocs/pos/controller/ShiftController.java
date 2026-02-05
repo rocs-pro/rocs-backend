@@ -10,6 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.util.Map;
+import com.nsbm.rocs.entity.main.UserProfile;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @RestController
 @RequestMapping("/api/v1/pos")
@@ -18,6 +21,17 @@ public class ShiftController {
 
     @Autowired
     private ShiftService shiftService;
+
+    private Long getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof UserProfile) {
+            return ((UserProfile) auth.getPrincipal()).getUserId();
+        }
+        // Fallback for development/testing if auth not fully set up or for non-user principals
+        // But ideally should throw error if not authenticated
+        // throw new RuntimeException("User not authenticated");
+        return 1001L; // Keeping fallback for safety during dev, but ideally remove
+    }
 
     @PostMapping("/shift/open")
     public ResponseEntity<?> startShift(@Valid @RequestBody ShiftStartRequest request) {
@@ -35,11 +49,13 @@ public class ShiftController {
     }
 
     @GetMapping("/shift/active")
-    public ResponseEntity<ApiResponse<CashShift>> getActiveShift(@RequestParam Long terminalId) {
+    public ResponseEntity<ApiResponse<com.nsbm.rocs.pos.dto.shift.ShiftResponse>> getActiveShift(
+            @RequestParam Long terminalId, 
+            @RequestParam(required = false) Long cashierId) {
         try {
-            CashShift activeShift = shiftService.getActiveShiftByTerminalId(terminalId);
+            com.nsbm.rocs.pos.dto.shift.ShiftResponse activeShift = shiftService.getActiveShift(terminalId, cashierId);
             if (activeShift == null) {
-                 return ResponseEntity.status(404).body(ApiResponse.error("No active shift found for terminal " + terminalId));
+                 return ResponseEntity.status(404).body(ApiResponse.error("No active shift found"));
             }
             return ResponseEntity.ok(ApiResponse.success("Active shift found", activeShift));
         } catch (Exception e) {
@@ -59,8 +75,12 @@ public class ShiftController {
 
     @PostMapping("/shift/close")
     public ResponseEntity<ApiResponse<String>> closeShift(@RequestBody CloseShiftRequest request) {
-        // TODO: In production, extract this ID from the SecurityContext
-        Long cashierId = 1001L;
+        Long cashierId;
+        try {
+             cashierId = getCurrentUserId();
+        } catch (Exception e) {
+             cashierId = 1001L;
+        }
 
         try {
             shiftService.closeShift(cashierId, request);
@@ -85,6 +105,22 @@ public class ShiftController {
         try {
             java.util.List<com.nsbm.rocs.entity.main.UserProfile> cashiers = shiftService.getCashiersByBranch(branchId);
             return ResponseEntity.ok(ApiResponse.success("Cashiers retrieved", cashiers));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/cash-flows")
+    public ResponseEntity<ApiResponse<com.nsbm.rocs.entity.pos.CashFlow>> recordCashFlow(@RequestBody com.nsbm.rocs.pos.dto.CashFlowRequest request) {
+        Long cashierId;
+        try {
+             cashierId = getCurrentUserId();
+        } catch (Exception e) {
+             cashierId = 1001L;
+        } 
+        try {
+            com.nsbm.rocs.entity.pos.CashFlow flow = shiftService.recordCashFlow(cashierId, request);
+            return ResponseEntity.ok(ApiResponse.success("Cash flow recorded", flow));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

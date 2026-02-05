@@ -28,6 +28,9 @@ public class SalesReturn {
     @Column(name = "sale_id", nullable = false)
     private Long saleId;
 
+    @Column(name = "shift_id")
+    private Long shiftId;
+
     @Column(name = "branch_id", nullable = false)
     private Long branchId;
 

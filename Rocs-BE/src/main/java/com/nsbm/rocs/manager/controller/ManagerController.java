@@ -15,7 +15,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/inventory/manager")
+@RequestMapping("/api/v1/manager")
 @RequiredArgsConstructor
 public class ManagerController {
 
@@ -113,7 +113,8 @@ public class ManagerController {
         ApprovalDTO approval = managerService.updateApprovalStatus(
                 approvalId,
                 request.getStatus(),
-                request.getNotes()
+                request.getNotes(),
+                request.getRole()
         );
         return ResponseEntity.ok(approval);
     }

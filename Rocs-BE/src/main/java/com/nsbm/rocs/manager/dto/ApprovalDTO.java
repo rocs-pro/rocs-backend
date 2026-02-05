@@ -14,7 +14,10 @@ public class ApprovalDTO {
     private String category;
     private String reference;
     private String requestedBy;
+    private String username;
+    private String email;
     private String time;
+    private String approvedAt;
     private String status;
+    private String description;
 }
-

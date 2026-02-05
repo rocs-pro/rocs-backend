@@ -4,6 +4,8 @@ import com.nsbm.rocs.entity.pos.Payment;
 import com.nsbm.rocs.entity.pos.Sale;
 import com.nsbm.rocs.entity.pos.SaleItem;
 import com.nsbm.rocs.inventory.repository.ProductRepository;
+import com.nsbm.rocs.inventory.repository.StockRepository;
+import com.nsbm.rocs.entity.inventory.Stock;
 import com.nsbm.rocs.entity.inventory.Product;
 import com.nsbm.rocs.pos.dto.sale.CreateSaleRequest;
 import com.nsbm.rocs.pos.dto.sale.PaymentRequest;
@@ -16,6 +18,11 @@ import com.nsbm.rocs.pos.repository.CustomerRepository;
 import com.nsbm.rocs.pos.repository.PaymentRepository;
 import com.nsbm.rocs.pos.repository.SaleItemRepository;
 import com.nsbm.rocs.pos.repository.SaleRepository;
+import com.nsbm.rocs.entity.pos.SalesReturn;
+import com.nsbm.rocs.entity.pos.SalesReturnItem;
+import com.nsbm.rocs.pos.repository.SalesReturnRepository;
+import com.nsbm.rocs.pos.repository.SalesReturnItemRepository;
+import com.nsbm.rocs.pos.dto.returns.ReturnRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +36,14 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.nsbm.rocs.auth.repo.UserProfileRepo;
+import com.nsbm.rocs.entity.main.UserProfile;
+import com.nsbm.rocs.entity.enums.Role;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import com.nsbm.rocs.service.audit.ActivityLogService;
+import org.springframework.security.core.Authentication;
+
 @Service
 public class PosService {
 
@@ -37,30 +52,79 @@ public class PosService {
     private final PaymentRepository paymentRepository;
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
+    private final SalesReturnRepository salesReturnRepository;
+    private final SalesReturnItemRepository salesReturnItemRepository;
+    private final UserProfileRepo userProfileRepo;
+    private final AuthenticationManager authenticationManager;
+    private final StockRepository stockRepository;
+    private final ActivityLogService activityLogService;
 
     @Autowired
     public PosService(SaleRepository saleRepository,
                       SaleItemRepository saleItemRepository,
                       PaymentRepository paymentRepository,
                       CustomerRepository customerRepository,
-                      ProductRepository productRepository) {
+                      ProductRepository productRepository,
+                      SalesReturnRepository salesReturnRepository,
+                      SalesReturnItemRepository salesReturnItemRepository,
+                      UserProfileRepo userProfileRepo,
+                      AuthenticationManager authenticationManager,
+                      StockRepository stockRepository,
+                      ActivityLogService activityLogService) {
         this.saleRepository = saleRepository;
         this.saleItemRepository = saleItemRepository;
         this.paymentRepository = paymentRepository;
         this.customerRepository = customerRepository;
         this.productRepository = productRepository;
+        this.salesReturnRepository = salesReturnRepository;
+        this.salesReturnItemRepository = salesReturnItemRepository;
+        this.userProfileRepo = userProfileRepo;
+        this.authenticationManager = authenticationManager;
+        this.stockRepository = stockRepository;
+        this.activityLogService = activityLogService;
     }
 
     @Transactional
     public SaleResponse createSale(CreateSaleRequest request, Long branchId, Long cashierId, Long shiftId) {
-        // 1. Create Sale Entity
-        Sale sale = new Sale();
-        sale.setInvoiceNo(generateInvoiceNo());
+        // 1. Create OR Update Sale Entity
+        Sale sale = null;
+        boolean isUpdate = false;
+
+        if (request.getSaleId() != null) {
+            sale = saleRepository.findById(request.getSaleId()).orElse(null);
+            // Only allow updating if it was HELD or PENDING
+            if (sale != null && ("HELD".equalsIgnoreCase(sale.getPaymentStatus()) || "PENDING".equalsIgnoreCase(sale.getPaymentStatus()))) {
+                isUpdate = true;
+                // Clear existing items/payments to replace them (simplest approach for sync)
+                saleItemRepository.deleteBySaleId(sale.getSaleId());
+                paymentRepository.deleteBySaleId(sale.getSaleId());
+            } else {
+                // Invalid ID or status, fallback to create new (or could throw error)
+                sale = new Sale();
+                sale.setInvoiceNo(generateInvoiceNo());
+                sale.setSaleDate(LocalDateTime.now()); // Set date for new
+            }
+        } else {
+            sale = new Sale();
+            sale.setInvoiceNo(generateInvoiceNo());
+            sale.setSaleDate(LocalDateTime.now());
+        }
+
         sale.setBranchId(branchId);
         sale.setCashierId(cashierId);
         sale.setCustomerId(request.getCustomerId());
-        sale.setShiftId(shiftId);
+        if (!isUpdate) { // Only change shift if it's new, otherwise keep original shift? Or update to current?
+             // Usually if you recall and pay, it belongs to the *current* shift.
+             sale.setShiftId(shiftId);
+        } else {
+             sale.setShiftId(shiftId); // Update shift to current active shift on payment
+        }
+        
+        // If updating, date might need to be refreshed or kept?
+        // Let's refresh date to "Now" if we are paying. If just holding again, maybe keep or update.
+        // Let's update it to allow accurate reporting.
         sale.setSaleDate(LocalDateTime.now());
+
         sale.setNotes(request.getNotes());
         sale.setDiscount(request.getDiscount() != null ? request.getDiscount() : BigDecimal.ZERO);
         sale.setTaxAmount(BigDecimal.ZERO); // Calculate taxes if needed
@@ -172,6 +236,22 @@ public class PosService {
             }
         }
 
+
+        
+        // Log Activity
+        activityLogService.logActivity(
+            branchId,
+            null, // Could fetch terminal ID if available, but might not be passed here
+            cashierId,
+            null, 
+            "CASHIER",
+            "SALE",
+            "ORDER",
+            sale.getSaleId(), // Use ID instead of Invoice String for BIGINT compatibility
+            "Retail Sale " + sale.getInvoiceNo() + ". Total: " + sale.getNetTotal(),
+            "Items: " + saleItems.size()
+        );
+
         return mapToResponse(sale, saleItems, payments);
     }
 
@@ -245,10 +325,13 @@ public class PosService {
                 .saleDate(sale.getSaleDate())
                 .notes(sale.getNotes());
 
-        // Fetch Customer Name
+        // Fetch Customer Name and full customer object
         if (sale.getCustomerId() != null) {
             customerRepository.findById(sale.getCustomerId())
-                    .ifPresent(customer -> builder.customerName(customer.getName()));
+                    .ifPresent(customer -> {
+                        builder.customerName(customer.getName());
+                        builder.customer(customer); // Pass full Customer entity
+                    });
         }
 
         // Fetch Product Names optimization
@@ -332,14 +415,252 @@ public class PosService {
             // Optimization: count items instead of fetching all if repository supports it
             // For now, fetch list to get count
             List<SaleItem> items = saleItemRepository.findBySaleId(sale.getSaleId());
+            String customerName = "Walk-in Customer";
+            if (sale.getCustomerId() != null) {
+                customerName = customerRepository.findById(sale.getCustomerId())
+                        .map(c -> c.getName()).orElse("Walk-in Customer");
+            }
 
             return new SaleSummaryDTO(
+                sale.getSaleId(),
                 sale.getInvoiceNo(),
                 sale.getSaleDate() != null ? sale.getSaleDate().format(formatter) : "",
                 items.size(),
                 sale.getNetTotal(),
+                sale.getGrossTotal(),
+                customerName,
                 sale.getPaymentStatus()
             );
         }).collect(Collectors.toList());
+    }
+
+    public com.nsbm.rocs.entity.pos.Customer createCustomer(com.nsbm.rocs.pos.dto.customer.CreateCustomerRequest request) {
+        // Validate
+        if (request.getName() == null || request.getName().isEmpty()) {
+            throw new RuntimeException("Customer Name is required");
+        }
+        if (request.getPhone() == null || request.getPhone().isEmpty()) {
+            throw new RuntimeException("Phone is required");
+        }
+
+        // Check duplicate
+        if (customerRepository.findByPhone(request.getPhone()).isPresent()) {
+            throw new RuntimeException("Customer with this phone already exists");
+        }
+
+        com.nsbm.rocs.entity.pos.Customer customer = new com.nsbm.rocs.entity.pos.Customer();
+        customer.setName(request.getName());
+        customer.setPhone(request.getPhone());
+        customer.setEmail(request.getEmail());
+        customer.setAddress(request.getAddress());
+        customer.setCity(request.getCity());
+        customer.setDateOfBirth(request.getDateOfBirth());
+        customer.setLoyaltyPoints(0);
+        customer.setTotalPurchases(BigDecimal.ZERO);
+        customer.setIsActive(true);
+        customer.setCode(generateCustomerCode());
+
+        return customerRepository.save(customer);
+    }
+
+    public void updateLoyaltyPoints(Long customerId, Integer points) {
+        customerRepository.findById(customerId).ifPresent(customer -> {
+            Integer current = customer.getLoyaltyPoints() != null ? customer.getLoyaltyPoints() : 0;
+            customer.setLoyaltyPoints(current + points);
+            customerRepository.save(customer);
+            
+            // Log Activity
+            try {
+                activityLogService.logActivity(
+                    1L, // Default branch or fetch from context if possible
+                    null,
+                    null, // User ID not always available here without context, assume System or last logged user
+                    "System",
+                    "SYSTEM",
+                    "LOYALTY_UPDATE",
+                    "CUSTOMER",
+                    customerId, // Already Long
+                    "Updated loyalty points for customer " + customer.getName() + ": " + (points > 0 ? "+" : "") + points,
+                    "New Balance: " + customer.getLoyaltyPoints()
+                );
+            } catch (Exception e) {
+                // Ignore log error
+            }
+        });
+    }
+
+    private String generateCustomerCode() {
+        return "CUS-" + System.currentTimeMillis(); // Simple generation for now
+    }
+    public List<com.nsbm.rocs.entity.pos.Customer> searchCustomers(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        List<com.nsbm.rocs.entity.pos.Customer> byPhone = customerRepository.findByPhoneContaining(query);
+        List<com.nsbm.rocs.entity.pos.Customer> byName = customerRepository.findByNameContainingIgnoreCase(query);
+        
+        // Merge without duplicates
+        java.util.Set<com.nsbm.rocs.entity.pos.Customer> merged = new java.util.HashSet<>(byPhone);
+        merged.addAll(byName);
+        
+        return new ArrayList<>(merged);
+    }
+    
+    public com.nsbm.rocs.entity.pos.Customer getCustomerByCode(String code) {
+        return customerRepository.findByCode(code).orElse(null);
+    }
+
+    @Transactional
+    public Long processReturn(ReturnRequest request) {
+        // --- Supervisor Validation ---
+        String supUser = request.getSupervisorUsername();
+        String supPass = request.getSupervisorPassword();
+
+        if (supUser == null || supUser.isEmpty() || supPass == null || supPass.isEmpty()) {
+            throw new RuntimeException("Supervisor approval is required for returns.");
+        }
+
+        Long supervisorId = null;
+        try {
+            Authentication auth = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(supUser, supPass)
+            );
+            if (auth.isAuthenticated()) {
+                UserProfile supervisor = userProfileRepo.findByUsername(supUser)
+                        .orElseThrow(() -> new RuntimeException("Supervisor not found"));
+                supervisorId = supervisor.getUserId();
+                String role = supervisor.getRole().name();
+                if (!"ADMIN".equals(role) && !"BRANCH_MANAGER".equals(role) && !"SUPERVISOR".equals(role)) {
+                     throw new RuntimeException("User does not have supervisor privileges.");
+                }
+            } else {
+                 throw new RuntimeException("Invalid supervisor credentials");
+            }
+        } catch (Exception e) {
+             throw new RuntimeException("Supervisor authorization failed: " + e.getMessage());
+        }
+        // -----------------------------
+
+        SalesReturn ret = new SalesReturn();
+        ret.setReturnNo(generateReturnNo());
+        ret.setSaleId(request.getSaleId());
+        ret.setBranchId(request.getBranchId());
+        ret.setReturnDate(LocalDateTime.now());
+        ret.setReason(request.getReason());
+        ret.setRefundMethod(request.getRefundMethod());
+        ret.setStatus("APPROVED");
+
+        ret = salesReturnRepository.save(ret);
+        
+        BigDecimal totalRefund = BigDecimal.ZERO;
+        List<SalesReturnItem> items = new ArrayList<>();
+
+        if (request.getItems() != null) {
+            for (ReturnRequest.ReturnItemRequest itemReq : request.getItems()) {
+                 SalesReturnItem item = new SalesReturnItem();
+                 item.setSalesReturn(ret);
+                 item.setSaleItemId(itemReq.getSaleItemId());
+                 item.setProductId(itemReq.getProductId());
+                 item.setQty(itemReq.getQty());
+                 item.setUnitPrice(itemReq.getUnitPrice());
+                 item.setTotal(itemReq.getUnitPrice().multiply(itemReq.getQty()));
+                 // item.setCondition(itemReq.getCondition());
+                 
+                 items.add(item);
+                 totalRefund = totalRefund.add(item.getTotal());
+
+                 // Restock inventory logic
+                 // Restock inventory logic
+                 try {
+                     // Update Stock entity
+                     Stock stock = stockRepository.findByBranchIdAndProductId(request.getBranchId(), itemReq.getProductId())
+                             .orElse(null);
+                     
+                     if (stock != null) {
+                         stock.setQuantity(stock.getQuantity().add(itemReq.getQty()));
+                         stock.setAvailableQty(stock.getAvailableQty().add(itemReq.getQty()));
+                         stockRepository.save(stock);
+                     } else {
+                         // Create new stock entry if not exists (less likely for return, but possible)
+                         // For now, only update if exists or log warning
+                         System.err.println("Stock not found for product " + itemReq.getProductId() + " in branch " + request.getBranchId());
+                         
+                         // Optional: Create new stock record
+                         Stock newStock = new Stock();
+                         newStock.setBranchId(request.getBranchId());
+                         newStock.setProductId(itemReq.getProductId());
+                         newStock.setQuantity(itemReq.getQty());
+                         newStock.setAvailableQty(itemReq.getQty());
+                         newStock.setReservedQty(BigDecimal.ZERO);
+                         stockRepository.save(newStock);
+                     }
+                 } catch (Exception e) {
+                     System.err.println("Failed to restock product " + itemReq.getProductId() + ": " + e.getMessage());
+                 }
+            }
+            salesReturnItemRepository.saveAll(items);
+        }
+        
+        ret.setTotalAmount(totalRefund);
+        salesReturnRepository.save(ret);
+
+        // Log Activity
+        activityLogService.logActivity(
+            request.getBranchId(),
+            null,
+            supervisorId, // Who authorized it
+            null,
+            "SUPERVISOR",
+            "RETURN",
+            "RETURN",
+            ret.getReturnId(), // Use ID
+            "Return processed for Sale #" + request.getSaleId() + ". Refund: " + totalRefund,
+            "Items: " + items.size()
+        );
+        
+        return ret.getReturnId();
+    }
+
+    private String generateReturnNo() {
+        return "RET-" + System.currentTimeMillis();
+    }
+    
+    public List<SaleSummaryDTO> getHeldBills(Long branchId) {
+        // Fetch sales with status 'HELD' for branch
+        // For now, assuming request filtering handles branch or all
+        List<Sale> heldSales = saleRepository.findByPaymentStatus("HELD"); // Add branch filter in repo if needed
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+        return heldSales.stream().map(sale -> {
+            // Filter by branch logic if not in repo
+            if (branchId != null && !branchId.equals(sale.getBranchId())) return null;
+            
+            List<SaleItem> items = saleItemRepository.findBySaleId(sale.getSaleId());
+            String customerName = "Walk-in Customer";
+            if (sale.getCustomerId() != null) {
+                customerName = customerRepository.findById(sale.getCustomerId())
+                        .map(c -> c.getName()).orElse("Walk-in Customer");
+            }
+            
+             return new SaleSummaryDTO(
+                sale.getSaleId(),
+                sale.getInvoiceNo(),
+                sale.getSaleDate() != null ? sale.getSaleDate().format(formatter) : "",
+                items.size(),
+                sale.getNetTotal(),
+                sale.getGrossTotal(),
+                customerName,
+                sale.getPaymentStatus()
+            );
+        }).filter(java.util.Objects::nonNull).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void updateSaleStatus(Long saleId, String status) {
+        saleRepository.findById(saleId).ifPresent(sale -> {
+            sale.setPaymentStatus(status);
+            saleRepository.save(sale);
+        });
     }
 }

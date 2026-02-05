@@ -28,6 +28,13 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequestDTO userDetails) {
         RegisterResponseDTO registeredUser = authService.registerUser(userDetails);
+
+        if (registeredUser.getUserId() == null && registeredUser.getMessage() != null) {
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(new ErrorDTO(registeredUser.getMessage()));
+        }
+
         if (registeredUser == null) {
             return ResponseEntity
                     .status(HttpStatus.BAD_GATEWAY)

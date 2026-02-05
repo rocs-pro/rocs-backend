@@ -20,4 +20,12 @@ public interface SaleItemRepository extends JpaRepository<@NonNull SaleItem, @No
      */
     List<SaleItem> findBySaleId(Long saleId);
 
+    /**
+     * Delete items by sale ID
+     * @param saleId - Sale ID
+     */
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    void deleteBySaleId(Long saleId);
+
 }

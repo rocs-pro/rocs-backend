@@ -41,5 +41,7 @@ public interface ManagerSaleRepository extends JpaRepository<Sale, Long> {
     @Query("SELECT COUNT(s) FROM Sale s WHERE s.saleDate BETWEEN :startDate AND :endDate")
     Long countByDateRange(@Param("startDate") LocalDateTime startDate,
                           @Param("endDate") LocalDateTime endDate);
+
+    List<Sale> findTop10ByCustomerIdOrderBySaleDateDesc(Long customerId);
 }
 

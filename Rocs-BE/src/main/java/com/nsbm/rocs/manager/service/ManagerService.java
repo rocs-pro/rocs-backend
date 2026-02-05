@@ -7,6 +7,8 @@ import com.nsbm.rocs.entity.inventory.GRN;
 import com.nsbm.rocs.entity.inventory.Product;
 import com.nsbm.rocs.entity.inventory.Supplier;
 import com.nsbm.rocs.entity.main.UserProfile;
+import com.nsbm.rocs.entity.enums.AccountStatus;
+import com.nsbm.rocs.entity.enums.Role;
 import com.nsbm.rocs.inventory.repository.BatchRepository;
 import com.nsbm.rocs.inventory.repository.GRNRepository;
 import com.nsbm.rocs.inventory.repository.ProductRepository;
@@ -17,6 +19,8 @@ import com.nsbm.rocs.manager.repository.ManagerSaleRepository;
 import com.nsbm.rocs.manager.repository.ManagerUserRepository;
 import com.nsbm.rocs.repository.audit.ApprovalRepository;
 import com.nsbm.rocs.repository.audit.UserActivityLogRepository;
+import com.nsbm.rocs.pos.repository.CashFlowRepository;
+import com.nsbm.rocs.entity.pos.CashFlow;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -49,6 +53,7 @@ public class ManagerService {
     private final SupplierRepository supplierRepository;
     private final ApprovalRepository approvalRepository;
     private final UserActivityLogRepository activityLogRepository;
+    private final CashFlowRepository cashFlowRepository;
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -316,23 +321,40 @@ public class ManagerService {
             approvals = approvalRepository.findAll();
         }
 
-        Map<Long, String> userNames = userRepository.findAll().stream()
-                .collect(Collectors.toMap(UserProfile::getUserId, UserProfile::getFullName, (a, b) -> a));
+        // Efficiently fetch users involved in these approvals
+        List<Long> userIds = approvals.stream()
+                .map(Approval::getRequestedBy)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        Map<Long, UserProfile> userMap = userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(UserProfile::getUserId, u -> u));
 
         return approvals.stream()
-                .map(approval -> ApprovalDTO.builder()
+                .map(approval -> {
+                    UserProfile user = userMap.get(approval.getRequestedBy());
+                    String name = user != null ? user.getFullName() : "Unknown";
+                    String username = user != null ? user.getUsername() : "-";
+                    String email = user != null ? user.getEmail() : "-";
+
+                    return ApprovalDTO.builder()
                         .id(approval.getApprovalId())
                         .category(approval.getType())
                         .reference(approval.getReferenceNo() != null ? approval.getReferenceNo() : "REF-" + approval.getReferenceId())
-                        .requestedBy(userNames.getOrDefault(approval.getRequestedBy(), "Unknown"))
+                        .requestedBy(name)
+                        .username(username)
+                        .email(email)
                         .time(formatDateTime(approval.getCreatedAt()))
+                        .approvedAt(formatDateTime(approval.getApprovedAt()))
                         .status(capitalizeFirst(approval.getStatus()))
-                        .build())
+                        .description(approval.getRequestNotes())
+                        .build();
+                })
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public ApprovalDTO updateApprovalStatus(Long approvalId, String status, String notes) {
+    public ApprovalDTO updateApprovalStatus(Long approvalId, String status, String notes, String role) {
         Approval approval = approvalRepository.findById(approvalId)
                 .orElseThrow(() -> new RuntimeException("Approval not found: " + approvalId));
 
@@ -340,18 +362,49 @@ public class ManagerService {
         approval.setApprovalNotes(notes);
         approval.setApprovedAt(LocalDateTime.now());
 
+        // Handle User Registration Approval logic
+        if ("USER_REGISTRATION".equals(approval.getType()) && "APPROVED".equalsIgnoreCase(status)) {
+            UserProfile user = userRepository.findById(approval.getReferenceId())
+                    .orElseThrow(() -> new RuntimeException("Ref User not found: " + approval.getReferenceId()));
+
+            user.setAccountStatus(AccountStatus.ACTIVE);
+            if (role != null && !role.trim().isEmpty()) {
+                try {
+                    user.setRole(Role.valueOf(role));
+                } catch (IllegalArgumentException e) {
+                    throw new RuntimeException("Invalid role: " + role);
+                }
+            }
+            userRepository.save(user);
+        }
+
+        // Handle Cash Flow Approval Logic
+        if (approval.getType() != null && approval.getType().startsWith("CASH_FLOW_")) {
+             CashFlow cashFlow = cashFlowRepository.findById(approval.getReferenceId())
+                     .orElseThrow(() -> new RuntimeException("Cash Flow not found: " + approval.getReferenceId()));
+             
+             cashFlow.setStatus(status.toUpperCase()); // APPROVED, REJECTED
+             cashFlowRepository.save(cashFlow);
+        }
+
         approvalRepository.save(approval);
 
-        Map<Long, String> userNames = userRepository.findAll().stream()
-                .collect(Collectors.toMap(UserProfile::getUserId, UserProfile::getFullName, (a, b) -> a));
+        UserProfile user = userRepository.findById(approval.getRequestedBy()).orElse(null);
+        String name = user != null ? user.getFullName() : "Unknown";
+        String username = user != null ? user.getUsername() : "-";
+        String email = user != null ? user.getEmail() : "-";
 
         return ApprovalDTO.builder()
                 .id(approval.getApprovalId())
                 .category(approval.getType())
                 .reference(approval.getReferenceNo() != null ? approval.getReferenceNo() : "REF-" + approval.getReferenceId())
-                .requestedBy(userNames.getOrDefault(approval.getRequestedBy(), "Unknown"))
+                .requestedBy(name)
+                .username(username)
+                .email(email)
                 .time(formatDateTime(approval.getCreatedAt()))
+                .approvedAt(formatDateTime(approval.getApprovedAt()))
                 .status(capitalizeFirst(approval.getStatus()))
+                .description(approval.getRequestNotes())
                 .build();
     }
 
@@ -435,4 +488,3 @@ public class ManagerService {
         return "Info";
     }
 }
-

@@ -72,32 +72,64 @@ public class SaleRepositoryImpl implements SaleRepository {
 
     @Override
     public Long save(Sale sale) {
-        String sql = "INSERT INTO sales " +
-                "(invoice_no, branch_id, cashier_id, customer_id, shift_id, " +
-                " gross_total, discount, tax_amount, net_total, paid_amount, " +
-                " change_amount, payment_status, sale_type, notes) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        if (sale.getSaleId() != null) {
+            // UPDATE
+            String sql = "UPDATE sales SET " +
+                    "invoice_no = ?, branch_id = ?, cashier_id = ?, customer_id = ?, shift_id = ?, " +
+                    "gross_total = ?, discount = ?, tax_amount = ?, net_total = ?, paid_amount = ?, " +
+                    "change_amount = ?, payment_status = ?, sale_type = ?, notes = ?, sale_date = ? " +
+                    "WHERE sale_id = ?";
+            
+            jdbcTemplate.update(
+                    sql,
+                    sale.getInvoiceNo(),
+                    sale.getBranchId(),
+                    sale.getCashierId(),
+                    sale.getCustomerId(),
+                    sale.getShiftId(),
+                    sale.getGrossTotal(),
+                    sale.getDiscount(),
+                    sale.getTaxAmount(),
+                    sale.getNetTotal(),
+                    sale.getPaidAmount(),
+                    sale.getChangeAmount(),
+                    sale.getPaymentStatus(),
+                    sale.getSaleType(),
+                    sale.getNotes(),
+                    sale.getSaleDate(), // Ensure updated date is saved
+                    sale.getSaleId()
+            );
+            return sale.getSaleId();
+        } else {
+            // INSERT
+            String sql = "INSERT INTO sales " +
+                    "(invoice_no, branch_id, cashier_id, customer_id, shift_id, " +
+                    " gross_total, discount, tax_amount, net_total, paid_amount, " +
+                    " change_amount, payment_status, sale_type, notes, sale_date) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        jdbcTemplate.update(
-                sql,
-                sale.getInvoiceNo(),
-                sale.getBranchId(),
-                sale.getCashierId(),
-                sale.getCustomerId(),
-                sale.getShiftId(),
-                sale.getGrossTotal(),
-                sale.getDiscount(),
-                sale.getTaxAmount(),
-                sale.getNetTotal(),
-                sale.getPaidAmount(),
-                sale.getChangeAmount(),
-                sale.getPaymentStatus(),
-                sale.getSaleType(),
-                sale.getNotes()
-        );
+            jdbcTemplate.update(
+                    sql,
+                    sale.getInvoiceNo(),
+                    sale.getBranchId(),
+                    sale.getCashierId(),
+                    sale.getCustomerId(),
+                    sale.getShiftId(),
+                    sale.getGrossTotal(),
+                    sale.getDiscount(),
+                    sale.getTaxAmount(),
+                    sale.getNetTotal(),
+                    sale.getPaidAmount(),
+                    sale.getChangeAmount(),
+                    sale.getPaymentStatus(),
+                    sale.getSaleType(),
+                    sale.getNotes(),
+                    sale.getSaleDate()
+            );
 
-        // Get generated ID
-        return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+            // Get generated ID
+            return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+        }
     }
 
     @Override
