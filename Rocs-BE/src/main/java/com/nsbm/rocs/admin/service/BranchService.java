@@ -15,4 +15,6 @@ public interface BranchService {
     BranchDTO updateBranch(Long id, BranchDTO dto);
 
     void deleteBranch(Long id);
+
+    void toggleBranchStatus(Long id);
 }

@@ -29,6 +29,10 @@ public class MyUserDetailsService implements UserDetailsService {
         if (existUser.getAccountStatus() != AccountStatus.ACTIVE) {
             throw new DisabledException("Account is not active. Current status: " + existUser.getAccountStatus());
         }
+
+        if (existUser.getBranch() != null && Boolean.FALSE.equals(existUser.getBranch().getIsActive())) {
+             throw new DisabledException("Branch is deactivated. Please contact your administration.");
+        }
         return existUser;
     }
 }

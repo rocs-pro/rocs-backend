@@ -11,17 +11,13 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SalesReportDTO {
-    private String date;
-    private String dayName;
-    private int invoices;
+public class TerminalSalesDTO {
+    private Long id;
+    private String name;
+    private String code;
     private BigDecimal revenue;
-    private BigDecimal cost;
-    private BigDecimal profit;
     private BigDecimal cashSales;
     private BigDecimal cardSales;
-    private BigDecimal qrSales;
-    private BigDecimal returns;
-    private BigDecimal avgBasket;
-    private double profitMargin;
+    private Integer transactionCount;
+    private BigDecimal totalRevenue; // For percentage calculation if needed
 }

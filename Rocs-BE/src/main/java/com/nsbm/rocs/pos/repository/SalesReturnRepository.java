@@ -2,8 +2,12 @@ package com.nsbm.rocs.pos.repository;
 
 import com.nsbm.rocs.entity.pos.SalesReturn;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,7 +18,14 @@ public interface SalesReturnRepository extends JpaRepository<SalesReturn, Long> 
     List<SalesReturn> findBySaleId(Long saleId);
     List<SalesReturn> findByStatus(String status);
 
-    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(sr.totalAmount), 0) FROM SalesReturn sr WHERE sr.shiftId = :shiftId AND sr.status = 'APPROVED'")
-    java.math.BigDecimal sumTotalAmountByShiftId(@org.springframework.data.repository.query.Param("shiftId") Long shiftId);
+    @Query("SELECT COALESCE(SUM(sr.totalAmount), 0) FROM SalesReturn sr WHERE sr.shiftId = :shiftId AND sr.status = 'APPROVED'")
+    BigDecimal sumTotalAmountByShiftId(@Param("shiftId") Long shiftId);
+    
+    @Query("SELECT COALESCE(SUM(sr.totalAmount), 0) FROM SalesReturn sr WHERE sr.returnDate BETWEEN :startDate AND :endDate AND sr.status = 'APPROVED'")
+    BigDecimal sumTotalAmountByDateRange(@Param("startDate") LocalDateTime startDate,
+                                         @Param("endDate") LocalDateTime endDate);
+    
+    @Query("SELECT COUNT(sr) FROM SalesReturn sr WHERE sr.returnDate BETWEEN :startDate AND :endDate AND sr.status = 'APPROVED'")
+    Long countByDateRange(@Param("startDate") LocalDateTime startDate,
+                          @Param("endDate") LocalDateTime endDate);
 }
-

@@ -192,6 +192,13 @@ public class ShiftService {
         BigDecimal paidOut = cashFlowRepository.getTotalByTypeAndStatus(shiftId, "PAID_OUT", "APPROVED");
         if (paidOut == null) paidOut = BigDecimal.ZERO;
 
+        // Pending Cash Flows
+        BigDecimal pendingPaidIn = cashFlowRepository.getTotalByTypeAndStatus(shiftId, "PAID_IN", "PENDING");
+        if (pendingPaidIn == null) pendingPaidIn = BigDecimal.ZERO;
+
+        BigDecimal pendingPaidOut = cashFlowRepository.getTotalByTypeAndStatus(shiftId, "PAID_OUT", "PENDING");
+        if (pendingPaidOut == null) pendingPaidOut = BigDecimal.ZERO;
+
         long pendingRequests = cashFlowRepository.countByShiftIdAndStatus(shiftId, "PENDING");
 
         // Breakdowns
@@ -214,6 +221,8 @@ public class ShiftService {
         totals.put("totalReturns", returns);
         totals.put("paidIn", paidIn);
         totals.put("paidOut", paidOut);
+        totals.put("pendingPaidIn", pendingPaidIn);
+        totals.put("pendingPaidOut", pendingPaidOut);
         totals.put("pendingRequests", pendingRequests);
 
         // Expected Cash = Opening + Cash Sales + Paid In - Paid Out - Returns (Assuming returns are cash for safety, or refine later)

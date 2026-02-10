@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * REST Controller for Manager Dashboard endpoints.
- * Base path: /api/inventory/manager
+ * Base path: /api/v1/manager
  */
 @Slf4j
 @RestController
@@ -38,6 +38,36 @@ public class ManagerController {
         log.info("Fetching sales data for period: {}", period);
         List<SalesDataDTO> salesData = managerService.getSalesData(period);
         return ResponseEntity.ok(salesData);
+    }
+
+    // ===== COMPREHENSIVE SALES ANALYTICS =====
+
+    @GetMapping("/sales/analytics")
+    public ResponseEntity<SalesAnalyticsDTO> getSalesAnalytics(
+            @RequestParam(defaultValue = "daily") String period) {
+        log.info("Fetching comprehensive sales analytics for period: {}", period);
+        SalesAnalyticsDTO analytics = managerService.getSalesAnalytics(period);
+        return ResponseEntity.ok(analytics);
+    }
+
+    // ===== SALES REPORTS =====
+
+    @GetMapping("/reports/sales")
+    public ResponseEntity<List<SalesReportDTO>> getSalesReports(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        log.info("Fetching sales reports from {} to {}", startDate, endDate);
+        List<SalesReportDTO> reports = managerService.getSalesReports(startDate, endDate);
+        return ResponseEntity.ok(reports);
+    }
+
+    @GetMapping("/reports/sales/summary-by-terminal")
+    public ResponseEntity<List<TerminalSalesDTO>> getSalesSummaryByTerminal(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        log.info("Fetching sales summary by terminal from {} to {}", startDate, endDate);
+        List<TerminalSalesDTO> reports = managerService.getSalesByTerminal(startDate, endDate);
+        return ResponseEntity.ok(reports);
     }
 
     // ===== TOP SELLING PRODUCTS =====

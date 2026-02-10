@@ -20,4 +20,10 @@ public class ApprovalDTO {
     private String approvedAt;
     private String status;
     private String description;
+    
+    // Enhanced fields for payout details
+    private java.math.BigDecimal amount;
+    private String reason;
+    private String type; // e.g. PAID_OUT, PAID_IN
+    private String referenceNo;
 }

@@ -393,7 +393,39 @@ public class PosService {
         }).orElse(null);
     }
 
-    public List<SaleSummaryDTO> getSaleSummaries(String status) {
+    /**
+     * Get returnable sales - PAID sales from last N days with full item details
+     */
+    public List<SaleResponse> getReturnableSales(Long branchId, Integer days) {
+        LocalDateTime endDate = LocalDateTime.now();
+        LocalDateTime startDate = endDate.minusDays(days != null ? days : 7);
+        
+        List<Sale> sales = saleRepository.findByDateRange(branchId, startDate, endDate);
+        
+        // Filter to only PAID (completed) sales
+        sales = sales.stream()
+                .filter(s -> "PAID".equalsIgnoreCase(s.getPaymentStatus()))
+                .collect(Collectors.toList());
+        
+        return sales.stream().map(sale -> {
+            List<SaleItem> items = saleItemRepository.findBySaleId(sale.getSaleId());
+            List<Payment> payments = paymentRepository.findBySaleId(sale.getSaleId());
+            return mapToResponse(sale, items, payments);
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * Get sale by invoice number for return lookup
+     */
+    public SaleResponse getSaleByInvoiceNo(String invoiceNo) {
+        return saleRepository.findByInvoiceNo(invoiceNo).map(sale -> {
+            List<SaleItem> items = saleItemRepository.findBySaleId(sale.getSaleId());
+            List<Payment> payments = paymentRepository.findBySaleId(sale.getSaleId());
+            return mapToResponse(sale, items, payments);
+        }).orElse(null);
+    }
+
+    public List<SaleSummaryDTO> getSaleSummaries(Long branchId, String status, String startDateStr, String endDateStr) {
         // Map frontend status to backend status
         String dbStatus = status;
         if ("COMPLETED".equalsIgnoreCase(status)) {
@@ -402,11 +434,40 @@ public class PosService {
             dbStatus = "HELD";
         }
 
+        LocalDateTime startDate = null;
+        LocalDateTime endDate = null;
+        
+        try {
+             if (startDateStr != null) startDate = LocalDateTime.parse(startDateStr.replace("Z", "")); // Simple ISO fix or use formatter
+             if (endDateStr != null) endDate = LocalDateTime.parse(endDateStr.replace("Z", ""));
+        } catch (Exception e) {
+            // If parsing fails, ignore dates or set defaults
+             System.err.println("Date parsing error: " + e.getMessage());
+        }
+
         List<Sale> sales;
-        if (dbStatus != null && !dbStatus.isEmpty()) {
-             sales = saleRepository.findByPaymentStatus(dbStatus);
+        if (startDate != null && endDate != null) {
+            sales = saleRepository.findByDateRange(branchId, startDate, endDate);
+            // Filter by status if provided
+            if (dbStatus != null && !dbStatus.isEmpty()) {
+                 final String targetStatus = dbStatus;
+                 sales = sales.stream()
+                        .filter(s -> targetStatus.equalsIgnoreCase(s.getPaymentStatus()))
+                        .collect(Collectors.toList());
+            }
         } else {
-            sales = saleRepository.findAll();
+             // Fallback to all (restricted by status if present)
+             // WARN: This might fetch other branches if repository method doesn't filter!
+             // Ideally we should have findByBranchAndStatus
+             if (dbStatus != null && !dbStatus.isEmpty()) {
+                  sales = saleRepository.findByPaymentStatus(dbStatus);
+             } else {
+                 sales = saleRepository.findAll();
+             }
+             // Filter by branch manually to be safe
+             sales = sales.stream()
+                     .filter(s -> s.getBranchId().equals(branchId))
+                     .collect(Collectors.toList());
         }
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -442,6 +503,9 @@ public class PosService {
         if (request.getPhone() == null || request.getPhone().isEmpty()) {
             throw new RuntimeException("Phone is required");
         }
+        if (request.getEmail() == null || request.getEmail().isEmpty()) {
+            throw new RuntimeException("Email is required");
+        }
 
         // Check duplicate
         if (customerRepository.findByPhone(request.getPhone()).isPresent()) {
@@ -458,7 +522,7 @@ public class PosService {
         customer.setLoyaltyPoints(0);
         customer.setTotalPurchases(BigDecimal.ZERO);
         customer.setIsActive(true);
-        customer.setCode(generateCustomerCode());
+        customer.setCode(generateCustomerCode(request.getPhone()));
 
         return customerRepository.save(customer);
     }
@@ -489,8 +553,8 @@ public class PosService {
         });
     }
 
-    private String generateCustomerCode() {
-        return "CUS-" + System.currentTimeMillis(); // Simple generation for now
+    private String generateCustomerCode(String phone) {
+        return "CUS-" + phone; // Use phone number for informative ID
     }
     public List<com.nsbm.rocs.entity.pos.Customer> searchCustomers(String query) {
         if (query == null || query.trim().isEmpty()) {

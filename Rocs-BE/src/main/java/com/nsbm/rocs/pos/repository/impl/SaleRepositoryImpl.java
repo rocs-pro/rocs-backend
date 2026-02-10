@@ -122,7 +122,8 @@ public class SaleRepositoryImpl implements SaleRepository {
                 sale.getChangeAmount(),
                 sale.getPaymentStatus(),
                 sale.getSaleType(),
-                sale.getNotes());
+                sale.getNotes(),
+                sale.getSaleDate() != null ? sale.getSaleDate() : LocalDateTime.now());
 
             // Get generated ID
             return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);

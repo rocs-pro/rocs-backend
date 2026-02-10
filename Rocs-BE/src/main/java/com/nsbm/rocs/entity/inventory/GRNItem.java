@@ -41,4 +41,3 @@ public class GRNItem {
     @Column(precision = 15, scale = 2)
     private BigDecimal total;
 }
-

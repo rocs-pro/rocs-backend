@@ -2,7 +2,7 @@ package com.nsbm.rocs.admin.service.impl;
 
 import com.nsbm.rocs.admin.dto.GrnDTO;
 import com.nsbm.rocs.admin.service.GrnService;
-import com.nsbm.rocs.repository.GRNRepository;
+import com.nsbm.rocs.inventory.repository.GRNRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

@@ -81,8 +81,14 @@ public class PosController {
     }
 
     @GetMapping({"/orders", "/sales"})
-    public ResponseEntity<ApiResponse<List<SaleSummaryDTO>>> getBills(@RequestParam(required = false) String status) {
-        List<SaleSummaryDTO> response = posService.getSaleSummaries(status);
+    public ResponseEntity<ApiResponse<List<SaleSummaryDTO>>> getBills(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate
+    ) {
+        // Use current user branch
+        Long branchId = getCurrentUserBranchId();
+        List<SaleSummaryDTO> response = posService.getSaleSummaries(branchId, status, startDate, endDate);
         return new ResponseEntity<>(
                 ApiResponse.success("Orders fetched", response),
                 HttpStatus.OK
@@ -114,6 +120,35 @@ public class PosController {
         // Change status to PENDING to effectively extract it from HELD list
         posService.updateSaleStatus(id, "PENDING");
         return getBillById(id);
+    }
+
+    // Get returnable sales (last 7 days PAID sales with full details)
+    @GetMapping("/sales/returnable")
+    public ResponseEntity<ApiResponse<List<SaleResponse>>> getReturnableSales(
+            @RequestParam(required = false, defaultValue = "7") Integer days
+    ) {
+        try {
+            Long branchId = getCurrentUserBranchId();
+            List<SaleResponse> sales = posService.getReturnableSales(branchId, days);
+            return ResponseEntity.ok(ApiResponse.success("Returnable sales fetched", sales));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    // Search sale by invoice number for returns
+    @GetMapping("/sales/invoice/{invoiceNo}")
+    public ResponseEntity<ApiResponse<SaleResponse>> getSaleByInvoice(@PathVariable String invoiceNo) {
+        try {
+            SaleResponse response = posService.getSaleByInvoiceNo(invoiceNo);
+            if (response == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("Invoice not found"));
+            }
+            return ResponseEntity.ok(ApiResponse.success("Sale fetched", response));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
     }
 
     @PostMapping("/returns")

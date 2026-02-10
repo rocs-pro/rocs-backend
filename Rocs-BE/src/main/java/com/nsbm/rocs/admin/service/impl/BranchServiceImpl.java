@@ -75,6 +75,19 @@ public class BranchServiceImpl implements BranchService {
         branchRepository.delete(existing);
     }
 
+    @Override
+    public void toggleBranchStatus(Long id) {
+        Branch existing = branchRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Branch not found"));
+        // Toggle the status
+        if (existing.getIsActive() == null) {
+            existing.setIsActive(true);
+        } else {
+            existing.setIsActive(!existing.getIsActive());
+        }
+        branchRepository.save(existing);
+    }
+
     // Mapping helpers
     private BranchDTO toDTO(Branch b) {
         if (b == null) return null;

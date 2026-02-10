@@ -46,9 +46,11 @@ public class BranchActivity {
     @Column(name = "metadata", columnDefinition = "JSON")
     private String metadata;
 
+    @Builder.Default
     @Column(length = 20)
     private String severity = "INFO"; // INFO, WARNING, CRITICAL
 
+    @Builder.Default
     @Column(length = 20)
     private String status = "SUCCESS"; // SUCCESS, FAILED
 

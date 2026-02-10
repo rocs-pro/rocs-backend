@@ -15,8 +15,10 @@ import com.nsbm.rocs.inventory.repository.BatchRepository;
 import com.nsbm.rocs.inventory.repository.ProductRepository;
 import com.nsbm.rocs.repository.BranchRepository;
 import com.nsbm.rocs.inventory.service.GRNService;
+import com.nsbm.rocs.inventory.service.GRNPaymentRequestService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +55,10 @@ public class GRNServiceImpl implements GRNService {
 
     @Autowired
     private BranchRepository branchRepository;
+
+    @Autowired
+    @Lazy
+    private GRNPaymentRequestService paymentRequestService;
 
     @Override
     public GRNResponseDTO createGRN(GRNCreateRequestDTO request, Long currentUserId) {
@@ -189,6 +195,16 @@ public class GRNServiceImpl implements GRNService {
         grn.setStatus("APPROVED");
         grn.setApprovedBy(approvedBy);
         grn = grnRepository.save(grn);
+
+        // Create payment request for the approved GRN
+        // This will appear in POS top bar as notification
+        try {
+            paymentRequestService.createPaymentRequest(grnId, approvedBy);
+            log.info("Payment request created for GRN: {}", grnId);
+        } catch (Exception e) {
+            log.warn("Failed to create payment request for GRN {}: {}", grnId, e.getMessage());
+            // Don't fail the approval, just log the warning
+        }
 
         log.info("GRN approved: {}", grnId);
         return convertToResponseDTO(grn);

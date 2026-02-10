@@ -53,4 +53,6 @@ public class Branch {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+
 }

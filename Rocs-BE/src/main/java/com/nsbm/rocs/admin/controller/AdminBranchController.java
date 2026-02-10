@@ -19,30 +19,36 @@ public class AdminBranchController {
         this.branchService = branchService;
     }
 
-    @PostMapping("/create")
+    @PostMapping("")
     public ResponseEntity<BranchDTO> createBranch(@RequestBody BranchDTO dto) {
         BranchDTO created = branchService.createBranch(dto);
         return ResponseEntity.status(201).body(created);
     }
 
-    @GetMapping("/getAll")
+    @GetMapping({"", "/getAll"})
     public ResponseEntity<List<BranchDTO>> getAllBranches() {
         return ResponseEntity.ok(branchService.getAllBranches());
     }
 
-    @GetMapping("/getById/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<BranchDTO> getBranchById(@PathVariable Long id) {
         return ResponseEntity.ok(branchService.getBranchById(id));
     }
 
-    @PutMapping("/update/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<BranchDTO> updateBranch(@PathVariable Long id, @RequestBody BranchDTO dto) {
         return ResponseEntity.ok(branchService.updateBranch(id, dto));
     }
 
-    @DeleteMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteBranch(@PathVariable Long id) {
         branchService.deleteBranch(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/toggle-status")
+    public ResponseEntity<Void> toggleBranchStatus(@PathVariable Long id) {
+        branchService.toggleBranchStatus(id);
+        return ResponseEntity.ok().build();
     }
 }
