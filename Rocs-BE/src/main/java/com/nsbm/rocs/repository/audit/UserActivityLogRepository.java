@@ -21,4 +21,11 @@ public interface UserActivityLogRepository extends JpaRepository<UserActivityLog
 
     List<UserActivityLog> findByActivityTypeAndCreatedAtBetween(String activityType, LocalDateTime startDate,
             LocalDateTime endDate);
+
+    List<UserActivityLog> findByBranchIdAndActivityType(Long branchId, String activityType);
+
+    List<UserActivityLog> findByBranchIdAndCreatedAtBetween(Long branchId, LocalDateTime startDate, LocalDateTime endDate);
+
+    List<UserActivityLog> findByBranchIdAndActivityTypeAndCreatedAtBetween(Long branchId, String activityType,
+            LocalDateTime startDate, LocalDateTime endDate);
 }

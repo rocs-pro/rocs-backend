@@ -18,7 +18,7 @@ public class ActivityLogService {
     private BranchActivityRepository activityRepository;
 
     @Async
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void logActivity(Long branchId, Long terminalId, Long userId, String username, String userRole,
                             String actionType, String entityType, Long entityId, String details, String metadata) {
         

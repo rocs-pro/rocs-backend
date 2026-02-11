@@ -1,6 +1,6 @@
-package com.nsbm.rocs.dashboard.admin.controller;
+package com.nsbm.rocs.admin.controller;
 
-import com.nsbm.rocs.dashboard.admin.service.TerminalService;
+import com.nsbm.rocs.admin.service.TerminalService;
 import com.nsbm.rocs.entity.main.Terminal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/terminals")
+@RequestMapping("/api/v1/admin/terminals")
 public class TerminalController {
 
     private final TerminalService terminalService;

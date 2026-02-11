@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.List;
 import java.util.Optional;
@@ -122,7 +123,12 @@ public class UserServiceImpl implements UserService {
         if (!userRepository.existsById(userId)) {
             throw new RuntimeException("User not found");
         }
-        userRepository.deleteById(userId);
+        try {
+            userRepository.deleteById(userId);
+            userRepository.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new RuntimeException("Cannot delete user: This user has associated records (e.g. Approvals) that prevent deletion. Please deactivate the user instead.");
+        }
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.nsbm.rocs.dashboard.admin.service;
+package com.nsbm.rocs.admin.service;
 
 import com.nsbm.rocs.entity.main.Terminal;
 import java.util.List;

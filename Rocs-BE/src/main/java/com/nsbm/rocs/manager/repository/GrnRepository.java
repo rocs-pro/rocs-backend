@@ -1,4 +1,4 @@
-package com.nsbm.rocs.dashboard.manager.repository;
+package com.nsbm.rocs.manager.repository;
 
 import com.nsbm.rocs.entity.inventory.GRN;
 import org.springframework.data.jpa.repository.JpaRepository;

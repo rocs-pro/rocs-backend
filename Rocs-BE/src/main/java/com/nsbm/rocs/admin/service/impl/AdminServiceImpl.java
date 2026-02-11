@@ -1,6 +1,6 @@
-package com.nsbm.rocs.dashboard.admin.service.impl;
+package com.nsbm.rocs.admin.service.impl;
 
-import com.nsbm.rocs.dashboard.admin.service.AdminService;
+import com.nsbm.rocs.admin.service.AdminService;
 import com.nsbm.rocs.entity.enums.Role;
 import com.nsbm.rocs.entity.main.UserProfile;
 import com.nsbm.rocs.pos.repository.SaleRepository;

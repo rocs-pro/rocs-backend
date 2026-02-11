@@ -1,6 +1,6 @@
-package com.nsbm.rocs.dashboard.admin.service.impl;
+package com.nsbm.rocs.admin.service.impl;
 
-import com.nsbm.rocs.dashboard.admin.service.ActivityLogService;
+import com.nsbm.rocs.admin.service.ActivityLogService;
 import com.nsbm.rocs.entity.audit.UserActivityLog;
 import com.nsbm.rocs.repository.audit.UserActivityLogRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,12 +26,24 @@ public class ActivityLogServiceImpl implements ActivityLogService {
     }
 
     @Override
-    public List<UserActivityLog> getLogsByFilter(String type, LocalDateTime startDate, LocalDateTime endDate) {
-        if (type != null && !type.isEmpty() && startDate != null && endDate != null) {
+    public List<UserActivityLog> getLogsByFilter(Long branchId, String type, LocalDateTime startDate, LocalDateTime endDate) {
+        boolean hasType = type != null && !type.isEmpty();
+        boolean hasDates = startDate != null && endDate != null;
+        boolean hasBranch = branchId != null;
+
+        if (hasBranch && hasType && hasDates) {
+            return logRepository.findByBranchIdAndActivityTypeAndCreatedAtBetween(branchId, type, startDate, endDate);
+        } else if (hasBranch && hasType) {
+            return logRepository.findByBranchIdAndActivityType(branchId, type);
+        } else if (hasBranch && hasDates) {
+            return logRepository.findByBranchIdAndCreatedAtBetween(branchId, startDate, endDate);
+        } else if (hasBranch) {
+            return logRepository.findByBranchId(branchId);
+        } else if (hasType && hasDates) {
             return logRepository.findByActivityTypeAndCreatedAtBetween(type, startDate, endDate);
-        } else if (type != null && !type.isEmpty()) {
+        } else if (hasType) {
             return logRepository.findByActivityType(type);
-        } else if (startDate != null && endDate != null) {
+        } else if (hasDates) {
             return logRepository.findByCreatedAtBetween(startDate, endDate);
         } else {
             return getAllLogs();
@@ -39,8 +51,8 @@ public class ActivityLogServiceImpl implements ActivityLogService {
     }
 
     @Override
-    public List<UserActivityLog> searchLogs(String query, String type, LocalDateTime startDate, LocalDateTime endDate) {
-        List<UserActivityLog> logs = getLogsByFilter(type, startDate, endDate);
+    public List<UserActivityLog> searchLogs(String query, Long branchId, String type, LocalDateTime startDate, LocalDateTime endDate) {
+        List<UserActivityLog> logs = getLogsByFilter(branchId, type, startDate, endDate);
         if (query == null || query.isEmpty()) {
             return logs;
         }

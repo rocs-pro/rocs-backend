@@ -143,6 +143,11 @@ public class AuthService {
             return new LogInResponseDTO("Account is suspended. Please contact administrator.");
         }
 
+        // Check if branch is active
+        if (existUserByUsername.getBranch() != null && Boolean.FALSE.equals(existUserByUsername.getBranch().getIsActive())) {
+            return new LogInResponseDTO("Branch is deactivated. Please contact your administration.");
+        }
+
         Authentication authentication = authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(username, password));
         if (authentication.isAuthenticated()) {
@@ -177,6 +182,11 @@ public class AuthService {
 
         // Active check
         if (user.getAccountStatus() != AccountStatus.ACTIVE) {
+            return false;
+        }
+
+        // Branch active check
+        if (user.getBranch() != null && Boolean.FALSE.equals(user.getBranch().getIsActive())) {
             return false;
         }
 

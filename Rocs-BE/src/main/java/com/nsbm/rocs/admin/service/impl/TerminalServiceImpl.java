@@ -1,6 +1,6 @@
-package com.nsbm.rocs.dashboard.admin.service.impl;
+package com.nsbm.rocs.admin.service.impl;
 
-import com.nsbm.rocs.dashboard.admin.service.TerminalService;
+import com.nsbm.rocs.admin.service.TerminalService;
 import com.nsbm.rocs.entity.main.Terminal;
 import com.nsbm.rocs.repository.TerminalRepository;
 import org.springframework.beans.factory.annotation.Autowired;
