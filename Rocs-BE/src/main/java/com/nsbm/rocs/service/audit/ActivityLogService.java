@@ -43,11 +43,19 @@ public class ActivityLogService {
             // unless added to metadata or if we join with User tables.
             // But we can store them in description/metadata if we really want them snapshot.
             if (username != null || userRole != null) {
-                 // Append to metadata if simpler
-                 String userMeta = "{\"user\":\"" + username + "\", \"role\":\"" + userRole + "\"}";
-                 // Simple append for now
-                 if (activity.getMetadata() == null) activity.setMetadata(userMeta);
-                 else activity.setMetadata(activity.getMetadata().substring(0, activity.getMetadata().length()-1) + ", \"user_info\":" + userMeta + "}");
+                 // Build user metadata as proper JSON
+                 String userMeta = "{\"user\":\"" + (username != null ? username : "") + "\", \"role\":\"" + (userRole != null ? userRole : "") + "\"}";
+                 // Merge with existing metadata if present
+                 String existingMeta = activity.getMetadata();
+                 if (existingMeta == null || existingMeta.isEmpty()) {
+                     activity.setMetadata(userMeta);
+                 } else if (existingMeta.trim().startsWith("{") && existingMeta.trim().endsWith("}")) {
+                     // Existing metadata is JSON object — merge user_info into it
+                     activity.setMetadata(existingMeta.substring(0, existingMeta.lastIndexOf('}')) + ", \"user_info\":" + userMeta + "}");
+                 } else {
+                     // Existing metadata is not JSON — wrap everything as JSON
+                     activity.setMetadata("{\"info\":\"" + existingMeta.replace("\"", "'") + "\", \"user_info\":" + userMeta + "}");
+                 }
             }
 
             activityRepository.save(activity);

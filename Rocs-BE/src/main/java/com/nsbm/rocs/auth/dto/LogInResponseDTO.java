@@ -18,17 +18,22 @@ public class LogInResponseDTO {
     private Role role;
     private String redirectPath;
     private String message;
+    private Long branchId;
+    private String branchName;
 
     public LogInResponseDTO(String message) {
         this.message = message;
     }
 
-    public LogInResponseDTO(Long userId, String username, String email, String token, Role role, String message) {
+    public LogInResponseDTO(Long userId, String username, String email, String token, Role role, 
+                          Long branchId, String branchName, String message) {
         this.userId = userId;
         this.username = username;
         this.email = email;
         this.token = token;
         this.role = role;
+        this.branchId = branchId;
+        this.branchName = branchName;
         this.redirectPath = determineRedirectPath(role);
         this.message = message;
     }

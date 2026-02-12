@@ -147,18 +147,23 @@ public class ShiftService {
         Long savedShiftId = shiftRepository.save(shift);
         shift.setShiftId(savedShiftId);
      
+        // Fetch username for logging
+        String cashierUsername = userProfileRepo.findById(request.getCashierId())
+                .map(UserProfile::getUsername)
+                .orElse("Cashier #" + request.getCashierId());
+
         // Log Activity
         activityLogService.logActivity(
             request.getBranchId(),
             request.getTerminalId(),
             request.getCashierId(),
-            null, // username fetched inside service if needed, or pass it if known. we know ID.
+            cashierUsername,
             "CASHIER",
             "SHIFT_OPEN",
             "SHIFT",
             savedShiftId,
             "Shift #" + shift.getShiftNo() + " opened with opening cash " + request.getOpeningCash(),
-            null
+            "{\"openingCash\":\"" + request.getOpeningCash() + "\"}"
         );
 
         return savedShiftId;
@@ -283,18 +288,24 @@ public class ShiftService {
 
         shiftRepository.update(shift);
 
-        // Log Activity
+        // Fetch username for logging
+        String cashierUsername = userProfileRepo.findById(shift.getCashierId())
+                .map(UserProfile::getUsername)
+                .orElse("Cashier #" + shift.getCashierId());
+
+        // Log Activity — metadata must be valid JSON for MySQL JSON column
+        String closeMetadata = "{\"expected\":\"" + expected + "\",\"difference\":\"" + shift.getCashDifference() + "\",\"closingCash\":\"" + request.getClosingCash() + "\"}";
         activityLogService.logActivity(
             shift.getBranchId(),
             shift.getTerminalId(),
             shift.getCashierId(),
-            null, // username
+            cashierUsername,
             "CASHIER",
             "SHIFT_CLOSE",
             "SHIFT",
             shift.getShiftId(),
             "Shift #" + shift.getShiftNo() + " closed. Closing Cash: " + request.getClosingCash(),
-            "Expected: " + expected + ", Diff: " + shift.getCashDifference()
+            closeMetadata
         );
     }
 
@@ -347,18 +358,23 @@ public class ShiftService {
              approvalRepository.save(approval);
         }
 
+        // Fetch username for logging
+        String cashierUsername = userProfileRepo.findById(cashierId)
+                .map(UserProfile::getUsername)
+                .orElse("Cashier #" + cashierId);
+
         // Log Activity
         activityLogService.logActivity(
             shift.getBranchId(),
             shift.getTerminalId(),
             cashierId,
-            null,
+            cashierUsername,
             "CASHIER",
             "CASH_FLOW_REQUEST",
             "CASH_FLOW",
             savedFlow.getFlowId(),
             "Requested " + request.getType() + " of " + request.getAmount(),
-            request.getReason()
+            "{\"reason\":\"" + (request.getReason() != null ? request.getReason().replace("\"", "'") : "") + "\",\"amount\":\"" + request.getAmount() + "\"}"
         );
 
         return savedFlow;

@@ -161,12 +161,22 @@ public class AuthService {
             }
 
             String token = jwtService.generateToken(claims, existUserByUsername);
+            
+            Long branchId = null;
+            String branchName = null;
+            if (existUserByUsername.getBranch() != null) {
+                branchId = existUserByUsername.getBranch().getBranchId();
+                branchName = existUserByUsername.getBranch().getName();
+            }
+
             return new LogInResponseDTO(
                     existUserByUsername.getUserId(),
                     existUserByUsername.getUsername(),
                     existUserByUsername.getEmail(),
                     token,
                     existUserByUsername.getRole(),
+                    branchId,
+                    branchName,
                     "Login successful"
             );
         } else {

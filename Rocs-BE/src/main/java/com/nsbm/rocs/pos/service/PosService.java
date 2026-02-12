@@ -238,18 +238,23 @@ public class PosService {
 
 
         
+        // Fetch username for logging
+        String cashierUsername = userProfileRepo.findById(cashierId)
+                .map(UserProfile::getUsername)
+                .orElse("Cashier #" + cashierId);
+
         // Log Activity
         activityLogService.logActivity(
             branchId,
             null, // Could fetch terminal ID if available, but might not be passed here
             cashierId,
-            null, 
+            cashierUsername, 
             "CASHIER",
             "SALE",
             "ORDER",
             sale.getSaleId(), // Use ID instead of Invoice String for BIGINT compatibility
             "Retail Sale " + sale.getInvoiceNo() + ". Total: " + sale.getNetTotal(),
-            "Items: " + saleItems.size()
+            "{\"itemCount\":" + saleItems.size() + "}"
         );
 
         return mapToResponse(sale, saleItems, payments);
@@ -545,7 +550,7 @@ public class PosService {
                     "CUSTOMER",
                     customerId, // Already Long
                     "Updated loyalty points for customer " + customer.getName() + ": " + (points > 0 ? "+" : "") + points,
-                    "New Balance: " + customer.getLoyaltyPoints()
+                    "{\"newBalance\":" + customer.getLoyaltyPoints() + "}"
                 );
             } catch (Exception e) {
                 // Ignore log error
@@ -669,18 +674,23 @@ public class PosService {
         ret.setTotalAmount(totalRefund);
         salesReturnRepository.save(ret);
 
+        // Fetch supervisor username for logging
+        String supervisorUsername = userProfileRepo.findById(supervisorId)
+                .map(UserProfile::getUsername)
+                .orElse("Supervisor #" + supervisorId);
+
         // Log Activity
         activityLogService.logActivity(
             request.getBranchId(),
             null,
             supervisorId, // Who authorized it
-            null,
+            supervisorUsername,
             "SUPERVISOR",
             "RETURN",
             "RETURN",
             ret.getReturnId(), // Use ID
             "Return processed for Sale #" + request.getSaleId() + ". Refund: " + totalRefund,
-            "Items: " + items.size()
+            "{\"itemCount\":" + items.size() + "}"
         );
         
         return ret.getReturnId();
