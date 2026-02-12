@@ -20,6 +20,7 @@ import java.util.List;
 public class ManagerController {
 
     private final ManagerService managerService;
+    private final com.nsbm.rocs.manager.service.JasperReportService jasperReportService;
 
     // ===== DASHBOARD STATS =====
 
@@ -157,6 +158,81 @@ public class ManagerController {
         log.info("Fetching branch activity log with limit: {}", limit);
         List<ActivityLogDTO> activities = managerService.getBranchActivityLog(limit);
         return ResponseEntity.ok(activities);
+    }
+    
+    // ===== PDF REPORTS =====
+    
+    @GetMapping("/reports/sales/pdf")
+    public ResponseEntity<byte[]> getSalesReportsPdf(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        try {
+            byte[] pdfBytes = jasperReportService.generateSalesReportsPdf(startDate, endDate);
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=sales_report.pdf")
+                    .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, org.springframework.http.MediaType.APPLICATION_PDF_VALUE)
+                    .body(pdfBytes);
+        } catch (Exception e) {
+            log.error("Error generating sales report PDF", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    @GetMapping("/reports/activity-log/pdf")
+    public ResponseEntity<byte[]> getBranchActivityLogPdf(
+            @RequestParam(defaultValue = "100") int limit) {
+        try {
+            byte[] pdfBytes = jasperReportService.generateBranchActivityLogPdf(limit);
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=activity_log.pdf")
+                    .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, org.springframework.http.MediaType.APPLICATION_PDF_VALUE)
+                    .body(pdfBytes);
+        } catch (Exception e) {
+            log.error("Error generating activity log PDF", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    @GetMapping("/reports/loyalty/pdf")
+    public ResponseEntity<byte[]> getLoyaltyCustomersPdf() {
+        try {
+            byte[] pdfBytes = jasperReportService.generateLoyaltyCustomersPdf();
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=loyalty_customers.pdf")
+                    .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, org.springframework.http.MediaType.APPLICATION_PDF_VALUE)
+                    .body(pdfBytes);
+        } catch (Exception e) {
+            log.error("Error generating loyalty customers PDF", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    @GetMapping("/reports/grns/pdf")
+    public ResponseEntity<byte[]> getGrnListPdf() {
+        try {
+            byte[] pdfBytes = jasperReportService.generateGrnListPdf();
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=grn_list.pdf")
+                    .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, org.springframework.http.MediaType.APPLICATION_PDF_VALUE)
+                    .body(pdfBytes);
+        } catch (Exception e) {
+            log.error("Error generating GRN list PDF", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/reports/approvals/pdf")
+    public ResponseEntity<byte[]> getApprovalHistoryPdf() {
+        try {
+            byte[] pdfBytes = jasperReportService.generateApprovalHistoryPdf();
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=approval_history.pdf")
+                    .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, org.springframework.http.MediaType.APPLICATION_PDF_VALUE)
+                    .body(pdfBytes);
+        } catch (Exception e) {
+            log.error("Error generating approval history PDF", e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }
 

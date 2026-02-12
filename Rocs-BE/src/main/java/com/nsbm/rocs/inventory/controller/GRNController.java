@@ -253,6 +253,22 @@ public class GRNController {
                     .body(ApiResponse.error("Failed to retrieve pending GRNs: " + e.getMessage()));
         }
     }
+    
+    @Autowired
+    private com.nsbm.rocs.manager.service.JasperReportService jasperReportService;
+
+    @GetMapping("/reports/pdf")
+    public ResponseEntity<byte[]> getGrnListPdf() {
+        try {
+            byte[] pdfBytes = jasperReportService.generateGrnListPdf();
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=grn_list.pdf")
+                    .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, org.springframework.http.MediaType.APPLICATION_PDF_VALUE)
+                    .body(pdfBytes);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }
 
 

@@ -309,15 +309,22 @@ public class GRNServiceImpl implements GRNService {
 
     // Helper methods
 
-    private String generateGRNNumber(Long branchId) {
+    private synchronized String generateGRNNumber(Long branchId) {
         LocalDate today = LocalDate.now();
         String dateStr = today.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-
-        Long count = grnRepository.countByBranchIdAndGrnDate(branchId, today);
-        count++; // Start from 1
-
-        String sequence = String.format("%03d", count);
-        return String.format("GRN-%d-%s-%s", branchId, dateStr, sequence);
+        
+        // Count existing GRNs for today to get a starting sequence
+        long count = grnRepository.countByBranchIdAndGrnDate(branchId, today);
+        long sequence = count + 1;
+        
+        String grnNo;
+        do {
+            String sequenceStr = String.format("%03d", sequence);
+            grnNo = String.format("GRN-%d-%s-%s", branchId, dateStr, sequenceStr);
+            sequence++;
+        } while (isGRNNumberExists(grnNo)); // Check existence using the service method
+        
+        return grnNo;
     }
 
     private void updateStockFromGRN(GRN grn) {

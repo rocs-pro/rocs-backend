@@ -202,6 +202,13 @@ public class GRNPaymentRequestServiceImpl implements GRNPaymentRequestService {
         String existingNotes = paymentRequest.getNotes() != null ? paymentRequest.getNotes() + "\n" : "";
         paymentRequest.setNotes(existingNotes + "Rejection Reason: " + reason);
 
+        // Update GRN payment status
+        GRN grn = grnRepository.findById(paymentRequest.getGrnId()).orElse(null);
+        if (grn != null) {
+            grn.setPaymentStatus("REJECTED");
+            grnRepository.save(grn);
+        }
+
         paymentRequest = paymentRequestRepository.save(paymentRequest);
         log.info("Payment request {} rejected", requestId);
 
