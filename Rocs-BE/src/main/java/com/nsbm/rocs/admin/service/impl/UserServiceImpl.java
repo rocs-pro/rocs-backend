@@ -25,14 +25,17 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final BranchRepository branchRepository;
     private final PasswordEncoder passwordEncoder;
+    private final com.nsbm.rocs.common.service.EmailService emailService;
 
     @Autowired
     public UserServiceImpl(UserRepository userRepository, 
                          BranchRepository branchRepository,
-                         PasswordEncoder passwordEncoder) {
+                         PasswordEncoder passwordEncoder,
+                         com.nsbm.rocs.common.service.EmailService emailService) {
         this.userRepository = userRepository;
         this.branchRepository = branchRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
     @Override
@@ -83,8 +86,8 @@ public class UserServiceImpl implements UserService {
         user.setRole(Role.BRANCH_MANAGER);
         user.setAccountStatus(AccountStatus.ACTIVE);
         
-        // Generate a random password if not provided
-        String rawPassword = UUID.randomUUID().toString().substring(0, 8);
+        // Generate a temporary password: username@temp
+        String rawPassword = userDTO.getUsername() + "@temp";
         user.setPassword(passwordEncoder.encode(rawPassword));
         
         if (userDTO.getBranchId() != null) {
@@ -94,6 +97,24 @@ public class UserServiceImpl implements UserService {
         }
 
         UserProfile savedUser = userRepository.save(user);
+
+        // Send email notification
+        try {
+            String subject = "Welcome to ROCS - Manager Account Created";
+            String body = "Dear " + savedUser.getFullName() + ",\n\n" +
+                    "Your manager account has been created successfully.\n" +
+                    "Username: " + savedUser.getUsername() + "\n" +
+                    "Password: " + rawPassword + "\n\n" +
+                    "Please log in and reset your password immediately using the 'Forgot Password' option or Profile settings.\n\n" +
+                    "Best Regards,\n" +
+                    "ROCS Admin Team";
+            
+            emailService.sendSimpleMessage(savedUser.getEmail(), subject, body);
+        } catch (Exception e) {
+            // Log error but don't fail registration
+            System.err.println("Failed to send welcome email to " + savedUser.getEmail() + ": " + e.getMessage());
+        }
+
         return convertToDTO(savedUser);
     }
 
